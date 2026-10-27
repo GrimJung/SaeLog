@@ -122,7 +122,8 @@ async function watch() {
       id,
       (raw, meta) => {
         if (id !== profile.childId) return;
-        if (!meta.fromCache && migratedFor !== id && Object.keys(raw).some((k) => DATE_KEY.test(k))) migrate(id, raw);
+        // 서버에서 확인된 내용일 때만 (기기에만 잠깐 반영된, 아직 거절될 수 있는 쓰기는 옮기지 않는다)
+        if (!meta.fromCache && !meta.hasPendingWrites && migratedFor !== id && Object.keys(raw).some((k) => DATE_KEY.test(k))) migrate(id, raw);
         entries = normalize(raw, (e) => memberIdFor(e.author));
         ls.set(CKEY(id), entries);
         sync = meta.hasPendingWrites ? 'pending' : meta.fromCache ? 'offline' : 'synced';
