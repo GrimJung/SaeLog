@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="214 112 628 748"><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+    <stop offset="0" stop-color="#080c22"/><stop offset="1" stop-color="#1a1d47"/>
+  </linearGradient>
+  <radialGradient id="haze" cx="0.5" cy="0.42" r="0.6">
+    <stop offset="0" stop-color="#6c6fd8" stop-opacity="0.16"/><stop offset="1" stop-color="#6c6fd8" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="glowGold">
+    <stop offset="0" stop-color="#ffd98a" stop-opacity="0.75"/>
+    <stop offset="0.25" stop-color="#ffd98a" stop-opacity="0.28"/>
+    <stop offset="1" stop-color="#ffd98a" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="glowLav">
+    <stop offset="0" stop-color="#b9b7ff" stop-opacity="0.6"/>
+    <stop offset="0.3" stop-color="#b9b7ff" stop-opacity="0.18"/>
+    <stop offset="1" stop-color="#b9b7ff" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="goldInk" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffe7b0"/><stop offset="1" stop-color="#f3c46e"/>
+  </linearGradient>
+  <radialGradient id="blush">
+    <stop offset="0" stop-color="#ffb18a" stop-opacity="0.55"/><stop offset="1" stop-color="#ffb18a" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>
+</defs><path d="M617.6,286.5 A282,282 0 1 1 384.0,799.3 Q344.5,816.0 262.7,834.8 L316.1,750.9 A282,282 0 0 1 406.4,286.5 C400.4,208.5 476.4,158.5 528.4,190.5 C578.4,222.5 556.4,284.5 514.4,280.5 C484.4,277.5 478.4,246.5 498.4,234.5" fill="none" stroke="#ffd98a" stroke-linecap="round" stroke-linejoin="round" stroke-width="56" opacity="0.28" filter="url(#soft)"/><path d="M617.6,286.5 A282,282 0 1 1 384.0,799.3 Q344.5,816.0 262.7,834.8 L316.1,750.9 A282,282 0 0 1 406.4,286.5 C400.4,208.5 476.4,158.5 528.4,190.5 C578.4,222.5 556.4,284.5 514.4,280.5 C484.4,277.5 478.4,246.5 498.4,234.5" fill="none" stroke="#ffd98a" stroke-linecap="round" stroke-linejoin="round" stroke-width="34"/><path d="M356,526 Q409,588 462,526" fill="none" stroke="#ffd98a" stroke-linecap="round" stroke-linejoin="round" stroke-width="38"/><path d="M562,526 Q615,588 668,526" fill="none" stroke="#ffd98a" stroke-linecap="round" stroke-linejoin="round" stroke-width="38"/><path d="M460,646 Q512,690 564,646" fill="none" stroke="#ffd98a" stroke-linecap="round" stroke-linejoin="round" stroke-width="34"/><ellipse cx="340" cy="620" rx="40" ry="24" fill="url(#blush)"/><ellipse cx="684" cy="620" rx="40" ry="24" fill="url(#blush)"/><circle cx="722" cy="196" r="145.2" fill="url(#glowGold)"/><path d="M722.0,130.0 C730.6,187.4 730.6,187.4 788.0,196.0 C730.6,204.6 730.6,204.6 722.0,262.0 C713.4,204.6 713.4,204.6 656.0,196.0 C713.4,187.4 713.4,187.4 722.0,130.0Z" fill="#fff3d2" opacity="1.0"/><circle cx="722" cy="196" r="7.3" fill="#ffffff"/></svg>

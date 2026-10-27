@@ -661,7 +661,7 @@ export function mountYear(el, { store, showEntry, state }) {
     ctx.globalAlpha = alpha;
 
     // 달 이름 — 모양의 바깥쪽에
-    ctx.font = '12px "Gowun Batang", serif';
+    ctx.font = '12px MaruBuri, serif';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = `rgba(214,210,240,${clamp(0.75 - zoomed * 0.04, 0.35, 0.7)})`;
     // 이름표 위치(가운데 기준)를 잡고, 겹치는 것끼리는 살짝 밀어낸다
@@ -701,7 +701,7 @@ export function mountYear(el, { store, showEntry, state }) {
 
     // 많이 확대하면 날짜
     if (zoomed > 4.5) {
-      ctx.font = '10px "Gowun Dodum", sans-serif';
+      ctx.font = '10px "Pretendard Variable", sans-serif';
       ctx.fillStyle = `rgba(200,200,232,${clamp((zoomed - 4.5) / 2, 0, 0.5)})`;
       for (const st of stars) {
         if (!st.first) continue; // 쌍성은 날짜를 한 번만
@@ -791,10 +791,10 @@ export function mountYear(el, { store, showEntry, state }) {
       const n = starsOf(g.year).length;
       ctx.globalAlpha = alpha;
       ctx.textAlign = 'center';
-      ctx.font = '15px "Gowun Batang", serif';
+      ctx.font = '15px MaruBuri, serif';
       ctx.fillStyle = 'rgba(236,232,246,0.92)';
       ctx.fillText(`${g.year}`, p.x, p.y + 16);
-      ctx.font = '11px "Gowun Dodum", sans-serif';
+      ctx.font = '11px "Pretendard Variable", sans-serif';
       ctx.fillStyle = 'rgba(179,176,204,0.85)';
       ctx.fillText([g.world.shape.name, age, n ? `별 ${n}개` : ''].filter(Boolean).join(' · '), p.x, p.y + 33);
     }

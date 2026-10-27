@@ -125,7 +125,7 @@ export function mountWeek(el, { store, showEntry, state }) {
     });
     ctx.globalCompositeOperation = 'source-over';
 
-    ctx.font = '11px "Gowun Dodum", sans-serif';
+    ctx.font = '11px "Pretendard Variable", sans-serif';
     ctx.textAlign = 'center';
     rec.forEach((i, k) => {
       const p = P(i);
