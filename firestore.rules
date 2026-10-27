@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// 새록새록 — Firestore 보안 규칙
+// Firebase 콘솔 → Firestore Database → 규칙(Rules) 탭에 그대로 붙여넣고 "게시".
+//
+// 원칙
+// - 아이 하늘(children/{childId})은 ID(초대 코드)를 아는 사람만 열 수 있다.
+// - 전체 목록 조회는 막는다 → 남의 코드를 훑어볼 방법이 없다.
+// - 기록은 형식이 맞을 때만 저장된다.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /children/{childId} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && childId.size() == 20
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 40;
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 40;
+      allow delete: if false;
+
+      match /entries/{date} {
+        function childExists() {
+          return exists(/databases/$(database)/documents/children/$(childId));
+        }
+        function validEntry() {
+          let d = request.resource.data;
+          return d.date == date
+            && d.text is string && d.text.size() > 0 && d.text.size() <= 1000
+            && d.level in ['pisik', 'mungkeul', 'forever']
+            && (!('note' in d) || (d.note is string && d.note.size() <= 300));
+        }
+        allow read: if signedIn() && childExists();
+        allow create, update: if signedIn() && childExists() && validEntry();
+        allow delete: if signedIn() && childExists();
+      }
+    }
+  }
+}

@@ -1,0 +1,117 @@
+// 함께 쓰기용 서버 연결 (Firebase Firestore).
+// 구조: children/{childId}            { name, createdAt, createdBy }
+//       children/{childId}/entries/{date}  기록 하나 (store.js 의 Entry)
+// childId(20자, 약 100비트 무작위)가 곧 초대 코드다. 아는 사람만 그 아이의 하늘에 들어올 수 있다.
+import { FIREBASE_CONFIG } from './firebase-config.js';
+
+const SDK = 'https://www.gstatic.com/firebasejs/10.12.2';
+const ALPHA = 'abcdefghijkmnpqrstuvwxyz23456789'; // 헷갈리는 l, o, 0, 1 제외 (32자)
+
+export const cloudReady = () => !!FIREBASE_CONFIG;
+
+let ready = null;
+function init() {
+  if (ready) return ready;
+  ready = (async () => {
+    const [{ initializeApp }, A, fs] = await Promise.all([
+      import(`${SDK}/firebase-app.js`),
+      import(`${SDK}/firebase-auth.js`),
+      import(`${SDK}/firebase-firestore.js`),
+    ]);
+    const app = initializeApp(FIREBASE_CONFIG);
+    const auth = A.getAuth(app);
+    let db;
+    try {
+      // 오프라인에서도 쓰고, 연결되면 알아서 올라가게
+      db = fs.initializeFirestore(app, {
+        localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }),
+      });
+    } catch {
+      db = fs.getFirestore(app);
+    }
+    // 로그인 화면 없이 기기마다 익명 계정을 하나 쓴다
+    const user = await new Promise((res, rej) => {
+      const un = A.onAuthStateChanged(auth, (u) => {
+        if (u) un(), res(u);
+        else A.signInAnonymously(auth).catch(rej);
+      });
+    });
+    return { fs, db, user };
+  })();
+  ready.catch(() => (ready = null)); // 실패하면 다음에 다시 시도
+  return ready;
+}
+
+export function newChildId() {
+  const b = crypto.getRandomValues(new Uint8Array(20));
+  return Array.from(b, (x) => ALPHA[x % 32]).join('');
+}
+
+// 링크 전체, 하이픈 넣은 코드, 맨 코드 모두 받는다
+export function parseCode(input = '') {
+  const s = input.trim().toLowerCase();
+  const m = s.match(/join=([a-z2-9-]+)/);
+  const raw = (m ? m[1] : s).replace(/[\s-]/g, '');
+  return new RegExp(`^[${ALPHA}]{20}$`).test(raw) ? raw : null;
+}
+export const formatCode = (id) => id.match(/.{1,5}/g).join('-');
+
+export async function createChild(name) {
+  const { fs, db, user } = await init();
+  const id = newChildId();
+  await fs.setDoc(fs.doc(db, 'children', id), { name, createdAt: Date.now(), createdBy: user.uid });
+  return id;
+}
+
+export async function getChild(id) {
+  const { fs, db } = await init();
+  const s = await fs.getDoc(fs.doc(db, 'children', id));
+  return s.exists() ? s.data() : null;
+}
+
+export async function renameChild(id, name) {
+  const { fs, db } = await init();
+  await fs.updateDoc(fs.doc(db, 'children', id), { name });
+}
+
+export async function watchEntries(id, onData, onError) {
+  const { fs, db } = await init();
+  return fs.onSnapshot(
+    fs.collection(db, 'children', id, 'entries'),
+    { includeMetadataChanges: true },
+    (snap) => {
+      const map = {};
+      snap.forEach((d) => (map[d.id] = d.data()));
+      onData(map, snap.metadata);
+    },
+    onError
+  );
+}
+
+export async function putEntry(id, e) {
+  const { fs, db } = await init();
+  return fs.setDoc(fs.doc(db, 'children', id, 'entries', e.date), e);
+}
+
+export async function deleteEntry(id, date) {
+  const { fs, db } = await init();
+  return fs.deleteDoc(fs.doc(db, 'children', id, 'entries', date));
+}
+
+// 여러 개 한 번에. skipExisting 이면 서버에 이미 있는 날짜는 건드리지 않는다.
+export async function putMany(id, list, { skipExisting = false } = {}) {
+  if (!list.length) return 0;
+  const { fs, db } = await init();
+  let todo = list;
+  if (skipExisting) {
+    const have = new Set();
+    (await fs.getDocs(fs.collection(db, 'children', id, 'entries'))).forEach((d) => have.add(d.id));
+    todo = list.filter((e) => !have.has(e.date));
+  }
+  for (let i = 0; i < todo.length; i += 400) {
+    const batch = fs.writeBatch(db);
+    for (const e of todo.slice(i, i + 400)) batch.set(fs.doc(db, 'children', id, 'entries', e.date), e);
+    await batch.commit();
+  }
+  return todo.length;
+}

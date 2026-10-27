@@ -1,7 +1,14 @@
 // 데이터 레이어 — 모드(밤하늘/정원)와 무관하다.
-// Entry: { date:'YYYY-MM-DD', text, level:'pisik'|'mungkeul'|'forever', note, createdAt, updatedAt }
+// Entry: { date:'YYYY-MM-DD', text, level:'pisik'|'mungkeul'|'forever', note,
+//          createdAt, updatedAt, author?, editedBy? }
+//
+// 저장소는 세 가지 중 하나:
+//  - local : 이 기기에만 (기본)
+//  - cloud : 아이 한 명의 하늘(childId)을 가족과 함께 (cloud.js)
+//  - demo  : ?demo — 메모리에만, 저장 안 함
 import { toKey, todayKey } from './date.js';
 import { rng } from './sky.js';
+import * as cloud from './cloud.js';
 
 export const LEVELS = [
   { id: 'pisik', label: '피식', desc: '웃겼던 말' },
@@ -10,29 +17,105 @@ export const LEVELS = [
 ];
 export const levelOf = (id) => LEVELS.find((l) => l.id === id) || LEVELS[0];
 
-const KEY = 'saerok:v1';
-const isDemo = new URLSearchParams(location.search).has('demo');
-const subs = new Set();
-let state = load();
+const KEY = 'saerok:v1'; // 이 기기 전용 기록
+const PKEY = 'saerok:profile'; // { childId, childName, nickname, lastChildId, lastChildName }
+const CKEY = (id) => `saerok:cache:${id}`; // 함께 쓰는 하늘의 사본 (빠른 첫 화면용)
 
-function load() {
-  if (isDemo) return { version: 1, entries: makeDemo() };
-  try {
-    const s = JSON.parse(localStorage.getItem(KEY));
-    if (s && s.entries) return s;
-  } catch {}
-  return { version: 1, entries: {} };
-}
-
-function commit() {
-  if (!isDemo) {
+const ls = {
+  get(k) {
     try {
-      localStorage.setItem(KEY, JSON.stringify(state));
+      return JSON.parse(localStorage.getItem(k));
+    } catch {
+      return null;
+    }
+  },
+  set(k, v) {
+    try {
+      localStorage.setItem(k, JSON.stringify(v));
     } catch (e) {
       console.warn('저장 실패', e);
     }
+  },
+};
+
+const isDemo = new URLSearchParams(location.search).has('demo');
+const subs = new Set();
+const emit = (type, info) => subs.forEach((fn) => fn(type, info));
+
+let profile = ls.get(PKEY) || {};
+let entries = {};
+let sync = 'local'; // local | demo | connecting | synced | pending | offline | error
+let unwatch = null;
+
+const shared = () => !isDemo && !!profile.childId;
+const localEntries = () => (ls.get(KEY) || {}).entries || {};
+
+function boot() {
+  if (isDemo) {
+    entries = makeDemo();
+    sync = 'demo';
+  } else if (profile.childId) {
+    entries = ls.get(CKEY(profile.childId)) || {};
+    watch();
+  } else {
+    entries = localEntries();
   }
-  subs.forEach((fn) => fn());
+}
+
+async function watch() {
+  const id = profile.childId;
+  unwatch?.();
+  unwatch = null;
+  setSync('connecting');
+  try {
+    const un = await cloud.watchEntries(
+      id,
+      (map, meta) => {
+        if (id !== profile.childId) return;
+        entries = map;
+        ls.set(CKEY(id), map);
+        sync = meta.hasPendingWrites ? 'pending' : meta.fromCache ? 'offline' : 'synced';
+        emit('change');
+      },
+      (err) => {
+        console.warn(err);
+        setSync('error');
+      }
+    );
+    if (id === profile.childId) unwatch = un;
+    else un();
+  } catch (e) {
+    console.warn(e);
+    setSync('offline');
+  }
+}
+
+function setSync(s) {
+  sync = s;
+  emit('sync');
+}
+
+function persist() {
+  if (isDemo) return;
+  if (shared()) ls.set(CKEY(profile.childId), entries);
+  else ls.set(KEY, { version: 1, entries });
+}
+
+function writeFailed(e) {
+  console.warn(e);
+  emit('error', e?.code === 'permission-denied' ? '저장 권한이 없어요. 초대 코드를 다시 확인해 주세요.' : '서버에 올리지 못했어요. 인터넷 연결을 확인해 주세요.');
+}
+
+function setProfile(p) {
+  profile = p;
+  ls.set(PKEY, p);
+}
+
+function connect(childId, childName, nickname) {
+  setProfile({ ...profile, childId, childName, nickname, lastChildId: childId, lastChildName: childName });
+  entries = ls.get(CKEY(childId)) || {};
+  emit('change');
+  watch();
 }
 
 const valid = (e) =>
@@ -41,54 +124,116 @@ const valid = (e) =>
 
 export const store = {
   isDemo,
-  get: (date) => state.entries[date] || null,
-  all: () => Object.values(state.entries).sort((a, b) => a.date.localeCompare(b.date)),
+  isShared: shared,
+  profile: () => ({ ...profile }),
+  syncState: () => sync,
+  localCount: () => Object.keys(localEntries()).length,
+
+  get: (date) => entries[date] || null,
+  all: () => Object.values(entries).sort((a, b) => a.date.localeCompare(b.date)),
   inYear: (y) => store.all().filter((e) => e.date.startsWith(`${y}-`)),
 
   upsert({ date, text, level, note = '' }) {
     const now = Date.now();
-    const prev = state.entries[date];
-    state.entries[date] = {
-      date,
-      text: text.trim(),
-      level,
-      note: note.trim(),
-      createdAt: prev?.createdAt || now,
-      updatedAt: now,
-    };
-    commit();
-    return state.entries[date];
+    const prev = entries[date];
+    const e = { date, text: text.trim(), level, note: note.trim(), createdAt: prev?.createdAt || now, updatedAt: now };
+    if (shared()) {
+      e.author = prev?.author || profile.nickname || '';
+      if (prev?.author && prev.author !== profile.nickname) e.editedBy = profile.nickname;
+    }
+    entries = { ...entries, [date]: e };
+    persist();
+    emit('change');
+    if (shared()) cloud.putEntry(profile.childId, e).catch(writeFailed);
+    return e;
   },
 
   remove(date) {
-    delete state.entries[date];
-    commit();
+    const { [date]: _, ...rest } = entries;
+    entries = rest;
+    persist();
+    emit('change');
+    if (shared()) cloud.deleteEntry(profile.childId, date).catch(writeFailed);
   },
 
-  exportJSON: () => JSON.stringify({ app: 'saerok', ...state }, null, 2),
+  exportJSON: () => JSON.stringify({ app: 'saerok', version: 1, child: profile.childName || null, entries }, null, 2),
 
   // 가져오기는 병합: 같은 날짜면 더 최근에 고친 쪽을 남긴다.
   importJSON(text) {
     const data = JSON.parse(text);
-    const list = Object.values(data.entries || {});
-    let n = 0;
-    for (const e of list) {
+    const changed = [];
+    for (const e of Object.values(data.entries || {})) {
       if (!valid(e)) continue;
-      const cur = state.entries[e.date];
+      const cur = entries[e.date];
       if (!cur || (e.updatedAt || 0) > (cur.updatedAt || 0)) {
-        state.entries[e.date] = { note: '', createdAt: Date.now(), updatedAt: Date.now(), ...e };
-        n++;
+        const next = { note: '', createdAt: Date.now(), updatedAt: Date.now(), ...e };
+        entries = { ...entries, [e.date]: next };
+        changed.push(next);
       }
     }
-    commit();
-    return n;
+    persist();
+    emit('change');
+    if (shared() && changed.length) cloud.putMany(profile.childId, changed).catch(writeFailed);
+    return changed.length;
   },
+
+  // ── 가족과 함께 쓰기 ──
+
+  // 새 하늘을 만들고, 이 기기에 있던 기록을 올린다.
+  async startFamily(childName, nickname) {
+    const id = await cloud.createChild(childName);
+    const list = Object.values(localEntries()).map((e) => ({ ...e, author: e.author || nickname }));
+    await cloud.putMany(id, list);
+    connect(id, childName, nickname);
+    return id;
+  },
+
+  // 초대 코드로 들어간다. merge 면 이 기기 기록 중 서버에 없는 날짜만 올린다.
+  async joinFamily(code, nickname, merge = false) {
+    const id = cloud.parseCode(code);
+    if (!id) throw new Error('invalid');
+    const child = await cloud.getChild(id);
+    if (!child) throw new Error('notfound');
+    if (merge) {
+      const list = Object.values(localEntries()).map((e) => ({ ...e, author: e.author || nickname }));
+      await cloud.putMany(id, list, { skipExisting: true });
+    }
+    connect(id, child.name, nickname);
+    return child;
+  },
+
+  setNickname(nickname) {
+    setProfile({ ...profile, nickname });
+    emit('sync');
+  },
+
+  async renameChild(name) {
+    await cloud.renameChild(profile.childId, name);
+    setProfile({ ...profile, childName: name, lastChildName: name });
+    emit('sync');
+  },
+
+  // 이 기기만 연결을 끊는다. 서버의 기록은 그대로 남는다.
+  disconnect() {
+    unwatch?.();
+    unwatch = null;
+    const { childId, childName, ...rest } = profile;
+    setProfile(rest);
+    entries = localEntries();
+    sync = 'local';
+    emit('change');
+  },
+
+  inviteLink: () => `${location.origin}${location.pathname}#join=${profile.childId}`,
+  inviteCode: () => (profile.childId ? cloud.formatCode(profile.childId) : ''),
 
   subscribe(fn) {
     subs.add(fn);
     return () => subs.delete(fn);
   },
 };
+
+boot();
 
 // ── 예시 하늘 (?demo) — 메모리에만 존재하고 저장되지 않는다 ──
 function makeDemo() {

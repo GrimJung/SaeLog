@@ -345,9 +345,11 @@ export function mountYear(el, { store, showEntry, state }) {
   }
 
   const stop = loop(draw);
+  const unsub = store.subscribe((type) => type === 'change' && placeStars());
   return {
     unmount() {
       stop();
+      unsub();
       cv.destroy();
     },
   };

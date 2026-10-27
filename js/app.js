@@ -1,9 +1,10 @@
 import { store, LEVELS, levelOf } from './store.js';
 import * as D from './date.js';
 import { currentMode } from './modes/index.js';
+import { cloudReady, parseCode, formatCode } from './cloud.js';
 
 const $ = (s, r = document) => r.querySelector(s);
-const esc = (s = '') => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const mode = currentMode();
 const viewState = {}; // 모드 뷰가 탭을 오가도 위치(주/연도)를 기억
@@ -16,6 +17,25 @@ const TABS = [
   ...mode.views,
   { id: 'forever', label: '평생기억', icon: ICONS.forever },
 ];
+const SYNC_LABEL = {
+  connecting: '연결하는 중',
+  synced: '함께 쓰는 중',
+  pending: '올리는 중',
+  offline: '오프라인 · 연결되면 올라가요',
+  error: '연결에 문제가 있어요',
+};
+
+// 받침이 있으면 '이', 없으면 '가' (엄마가 / 준이)
+const ga = (w = '') => {
+  const c = w.charCodeAt(w.length - 1);
+  return w + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? '이' : '가');
+};
+
+// 누가 띄운 별인지 (함께 쓸 때만)
+function whoLine(e) {
+  if (!store.isShared() || !e?.author) return '';
+  return e.editedBy && e.editedBy !== e.author ? `${ga(e.author)} 띄우고 ${ga(e.editedBy)} 고침` : `${ga(e.author)} 띄운 별`;
+}
 
 // ── 탭 / 라우팅 ──
 const views = $('#views');
@@ -33,6 +53,7 @@ for (const t of TABS) {
 let active = null;
 let handle = null;
 function go() {
+  if (location.hash.startsWith('#join=')) return handleJoinLink();
   const id = TABS.some((t) => t.id === location.hash.slice(1)) ? location.hash.slice(1) : 'today';
   if (handle) handle.unmount(), (handle = null);
   active = id;
@@ -50,6 +71,7 @@ window.addEventListener('hashchange', go);
 
 // ── 오늘 기록 ──
 let editDate = D.todayKey();
+let dirty = false; // 쓰는 중이면 가족의 변경이 들어와도 입력칸을 덮어쓰지 않는다
 const today = $('#view-today');
 today.innerHTML = `
   <header class="page-head">
@@ -87,9 +109,14 @@ const tSave = $('#t-save');
 function fillToday() {
   const isToday = editDate === D.todayKey();
   const e = store.get(editDate);
+  const me = store.profile().nickname;
   $('#t-eyebrow').textContent = isToday ? '오늘의 새록' : '지난 날의 새록';
   $('#t-date').textContent = isToday ? `오늘 · ${D.fmtShort(editDate)}` : D.fmtShort(editDate);
-  $('#t-sub').textContent = e ? '이미 떠 있는 별이에요. 고쳐 쓸 수 있어요.' : isToday ? '아이 재우고, 오늘 하루를 한마디로.' : '그날 아이가 했던 말을 떠올려 보세요.';
+  $('#t-sub').textContent = e
+    ? store.isShared() && e.author && e.author !== me
+      ? `${ga(e.author)} 띄운 별이에요. 함께 고쳐 쓸 수 있어요.`
+      : '이미 떠 있는 별이에요. 고쳐 쓸 수 있어요.'
+    : isToday ? '아이 재우고, 오늘 하루를 한마디로.' : '그날 아이가 했던 말을 떠올려 보세요.';
   const inp = $('#t-input');
   inp.value = editDate;
   inp.max = D.todayKey();
@@ -99,6 +126,7 @@ function fillToday() {
   form.querySelectorAll('input[name=level]').forEach((r) => (r.checked = r.value === e?.level));
   tSave.textContent = e ? '고쳐서 띄우기' : '하늘에 띄우기';
   $('#t-del').hidden = !e;
+  dirty = false;
   autoGrow();
   validate();
 }
@@ -109,8 +137,9 @@ function autoGrow() {
   tText.style.height = 'auto';
   tText.style.height = `${Math.max(96, tText.scrollHeight)}px`;
 }
-tText.addEventListener('input', () => (autoGrow(), validate()));
-form.addEventListener('change', validate);
+tText.addEventListener('input', () => ((dirty = true), autoGrow(), validate()));
+tNote.addEventListener('input', () => (dirty = true));
+form.addEventListener('change', () => ((dirty = true), validate()));
 today.querySelectorAll('.nav').forEach((b) =>
   b.addEventListener('click', () => {
     const next = D.addDays(editDate, +b.dataset.d);
@@ -141,7 +170,8 @@ form.addEventListener('submit', (ev) => {
   });
 });
 $('#t-del').addEventListener('click', () => {
-  if (!confirm(`${D.fmtShort(editDate)}의 기록을 지울까요?`)) return;
+  const msg = store.isShared() ? '가족 모두의 하늘에서 사라져요.' : '';
+  if (!confirm(`${D.fmtShort(editDate)}의 기록을 지울까요? ${msg}`)) return;
   store.remove(editDate);
   fillToday();
   toast('기록을 지웠어요');
@@ -171,7 +201,7 @@ function renderForever() {
           <article class="fcard" data-date="${e.date}" tabindex="0">
             <span class="star-ico forever"></span>
             <blockquote>${esc(e.text)}</blockquote>
-            <footer><time>${D.fmtLong(e.date)}</time>${e.note ? `<span>${esc(e.note)}</span>` : ''}</footer>
+            <footer><time>${D.fmtLong(e.date)}</time>${e.note ? `<span>${esc(e.note)}</span>` : ''}${whoLine(e) ? `<span>${esc(whoLine(e))}</span>` : ''}</footer>
           </article>`).join('')}</div>`
       : `<div class="empty"><span class="star-ico forever"></span><p>꼭 간직하고 싶은 말이 생기면<br>‘평생기억’으로 띄워주세요.<br>가장 밝은 별로 여기 모여요.</p></div>`}`;
 }
@@ -196,6 +226,9 @@ function showEntry(e) {
   const note = sheet.querySelector('.note');
   note.textContent = e.note || '';
   note.hidden = !e.note;
+  const who = sheet.querySelector('.who');
+  who.textContent = whoLine(e);
+  who.hidden = !who.textContent;
   sheet.dataset.date = e.date;
   openSheet(sheet);
 }
@@ -223,9 +256,16 @@ document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') document.querySelectorAll('.sheet.open').forEach(closeSheet);
 });
 
-// ── 메뉴: 백업 ──
+// ── 메뉴 ──
 const menu = $('#menu-sheet');
-$('#menu-btn').addEventListener('click', () => openSheet(menu));
+$('#menu-btn').addEventListener('click', () => {
+  renderFamilyBox();
+  openSheet(menu);
+});
+$('#child-chip').addEventListener('click', () => {
+  renderFamilyBox();
+  openSheet(menu);
+});
 $('#m-export').addEventListener('click', () => {
   const blob = new Blob([store.exportJSON()], { type: 'application/json' });
   const a = document.createElement('a');
@@ -253,6 +293,226 @@ if (store.isDemo) {
   $('#m-demo').textContent = '내 하늘로 돌아가기';
 }
 
+// ── 가족과 함께 쓰기 ──
+function renderFamilyBox() {
+  const box = $('#family-box');
+  const p = store.profile();
+  if (store.isDemo) return (box.innerHTML = '');
+  if (!cloudReady()) {
+    box.innerHTML = `<h3>가족과 함께 쓰기</h3>
+      <p class="menu-desc">함께 쓰기를 켜려면 서버(Firebase) 연결이 필요해요. 아직 설정 전이에요.</p>`;
+    return;
+  }
+  if (!p.childId) {
+    box.innerHTML = `<h3>가족과 함께 쓰기</h3>
+      <p class="menu-desc">아이 한 명의 하늘을 가족과 함께 채워요. 둘 다 쓰고, 둘 다 볼 수 있어요.</p>
+      <button class="menu-item accent" data-fam="start">함께 쓰기 시작하기<small>새 하늘을 만들고 가족을 초대해요</small></button>
+      <button class="menu-item" data-fam="join">초대 코드로 참여하기<small>가족에게 받은 링크나 코드가 있다면</small></button>
+      ${p.lastChildId ? `<button class="menu-item" data-fam="rejoin">${esc(p.lastChildName || '')}의 하늘에 다시 연결하기</button>` : ''}`;
+    return;
+  }
+  const s = store.syncState();
+  box.innerHTML = `<h3>${esc(p.childName)}의 하늘</h3>
+    <p class="menu-desc"><span class="sync-dot ${s}"></span>${SYNC_LABEL[s] || ''} · 나는 ‘${esc(p.nickname)}’</p>
+    <button class="menu-item accent" data-fam="invite">가족 초대하기<small>초대 링크를 보내면 같은 하늘을 함께 써요</small></button>
+    <button class="menu-item" data-fam="profile">이름·호칭 바꾸기</button>
+    <button class="ghost leave" data-fam="leave">이 기기에서 연결 끊기</button>`;
+}
+
+$('#menu-sheet').addEventListener('click', (ev) => {
+  const act = ev.target.closest('[data-fam]')?.dataset.fam;
+  if (!act) return;
+  if (act === 'start') famStart();
+  else if (act === 'join') famJoin();
+  else if (act === 'rejoin') famJoin(formatCode(store.profile().lastChildId));
+  else if (act === 'invite') famInvite(false);
+  else if (act === 'profile') famProfile();
+  else if (act === 'leave') {
+    const p = store.profile();
+    if (!confirm(`이 기기에서 ${p.childName}의 하늘 연결을 끊을까요?\n함께 쓴 기록은 서버에 그대로 남고, 언제든 다시 연결할 수 있어요.`)) return;
+    store.disconnect();
+    renderFamilyBox();
+    renderChip();
+    go();
+    toast('연결을 끊었어요. 이제 이 기기에만 저장돼요.');
+  }
+});
+
+const famSheet = $('#family-sheet');
+function fam(html) {
+  $('#family-body').innerHTML = html;
+  closeSheet(menu);
+  openSheet(famSheet);
+  $('#family-body input:not([type=checkbox])')?.focus({ preventScroll: true });
+}
+
+const NICKS = ['엄마', '아빠', '할머니', '할아버지'];
+function nickField(value = '') {
+  return `<label class="field"><span>내 호칭 <em>기록 옆에 표시돼요</em></span>
+      <input name="nick" maxlength="10" required placeholder="예: 엄마" value="${esc(value)}"></label>
+    <div class="chips">${NICKS.map((n) => `<button type="button" class="chip" data-nick="${n}">${n}</button>`).join('')}</div>`;
+}
+famSheet.addEventListener('click', (ev) => {
+  const chip = ev.target.closest('[data-nick]');
+  if (chip) chip.closest('form').nick.value = chip.dataset.nick;
+});
+
+async function busy(btn, label, fn) {
+  const prev = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = label;
+  const err = $('#family-body .form-err');
+  if (err) err.hidden = true;
+  try {
+    await fn();
+  } catch (e) {
+    console.warn(e);
+    if (err) {
+      err.hidden = false;
+      err.textContent =
+        e.message === 'invalid' ? '코드 형식이 맞지 않아요. 받은 링크를 그대로 붙여넣어 보세요.'
+        : e.message === 'notfound' ? '이 코드의 하늘을 찾지 못했어요. 다시 확인해 주세요.'
+        : '연결하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.';
+    }
+    btn.disabled = false;
+    btn.textContent = prev;
+  }
+}
+
+function famStart() {
+  const n = store.localCount();
+  fam(`<h3>함께 쓰기 시작하기</h3>
+    <p class="menu-desc">우리 아이의 하늘을 하나 만들어요. 만든 뒤 초대 링크를 가족에게 보내면 돼요.</p>
+    <form id="f-start">
+      <label class="field"><span>아이 이름</span><input name="child" maxlength="20" required placeholder="예: 새록이"></label>
+      ${nickField(store.profile().nickname)}
+      ${n ? `<p class="menu-desc small">이 기기에 있던 별 ${n}개도 함께 올라가요.</p>` : ''}
+      <p class="form-err" hidden></p>
+      <div class="sheet-actions"><button type="button" class="ghost" data-act="close">취소</button><button class="secondary strong">하늘 만들기</button></div>
+    </form>`);
+  $('#f-start').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const f = ev.target;
+    const child = f.child.value.trim();
+    const nick = f.nick.value.trim();
+    if (!child || !nick) return;
+    busy(f.querySelector('.strong'), '만드는 중…', async () => {
+      await store.startFamily(child, nick);
+      renderChip();
+      go();
+      famInvite(true);
+    });
+  });
+}
+
+function famJoin(code = '') {
+  const p = store.profile();
+  const n = store.localCount();
+  fam(`<h3>초대 코드로 참여하기</h3>
+    <p class="menu-desc">가족에게 받은 링크나 코드를 붙여넣어 주세요.</p>
+    <form id="f-join">
+      <label class="field"><span>초대 코드</span>
+        <input name="code" required autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="xxxxx-xxxxx-xxxxx-xxxxx" value="${esc(code)}"></label>
+      ${nickField(p.nickname)}
+      ${n && !p.childId ? `<label class="check"><input type="checkbox" name="merge" checked> 이 기기에 있던 별 ${n}개도 함께 옮기기<small>같은 날짜에 이미 별이 있으면 그쪽을 남겨요</small></label>` : ''}
+      ${p.childId ? `<p class="menu-desc small">지금 연결된 ${esc(p.childName)}의 하늘에서 바뀌어요.</p>` : ''}
+      <p class="form-err" hidden></p>
+      <div class="sheet-actions"><button type="button" class="ghost" data-act="close">취소</button><button class="secondary strong">함께 쓰기</button></div>
+    </form>`);
+  $('#f-join').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const f = ev.target;
+    const nick = f.nick.value.trim();
+    if (!nick) return;
+    busy(f.querySelector('.strong'), '연결하는 중…', async () => {
+      const child = await store.joinFamily(f.code.value, nick, !!f.merge?.checked);
+      closeSheet(famSheet);
+      renderChip();
+      go();
+      toast(`${child.name}의 하늘에 함께해요`);
+    });
+  });
+}
+
+function famInvite(first) {
+  const p = store.profile();
+  fam(`<h3>${first ? '하늘이 만들어졌어요' : '가족 초대하기'}</h3>
+    <p class="menu-desc">이 링크를 받은 사람은 ${esc(p.childName)}의 하늘을 함께 보고 쓸 수 있어요.<br>꼭 가족에게만 보내주세요.</p>
+    <div class="code-box"><small>초대 코드</small><code>${store.inviteCode()}</code></div>
+    <div class="sheet-actions">
+      <button class="ghost" data-inv="copy">링크 복사</button>
+      ${navigator.share ? '<button class="secondary strong" data-inv="share">공유하기</button>' : ''}
+      <button class="secondary" data-act="close">닫기</button>
+    </div>`);
+}
+famSheet.addEventListener('click', async (ev) => {
+  const act = ev.target.closest('[data-inv]')?.dataset.inv;
+  if (!act) return;
+  const link = store.inviteLink();
+  const name = store.profile().childName;
+  if (act === 'share') {
+    try {
+      await navigator.share({ title: '새록새록', text: `${name}의 하늘에 함께 별을 띄워요`, url: link });
+    } catch {}
+  } else {
+    try {
+      await navigator.clipboard.writeText(link);
+      toast('초대 링크를 복사했어요');
+    } catch {
+      prompt('이 링크를 복사해서 보내주세요', link);
+    }
+  }
+});
+
+function famProfile() {
+  const p = store.profile();
+  fam(`<h3>이름·호칭 바꾸기</h3>
+    <form id="f-prof">
+      <label class="field"><span>아이 이름 <em>가족 모두에게 바뀌어요</em></span><input name="child" maxlength="20" required value="${esc(p.childName)}"></label>
+      ${nickField(p.nickname)}
+      <p class="menu-desc small">이미 띄운 별의 이름표는 그대로 남아요.</p>
+      <p class="form-err" hidden></p>
+      <div class="sheet-actions"><button type="button" class="ghost" data-act="close">취소</button><button class="secondary strong">저장</button></div>
+    </form>`);
+  $('#f-prof').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const f = ev.target;
+    const child = f.child.value.trim();
+    const nick = f.nick.value.trim();
+    if (!child || !nick) return;
+    busy(f.querySelector('.strong'), '저장하는 중…', async () => {
+      if (child !== p.childName) await store.renameChild(child);
+      store.setNickname(nick);
+      closeSheet(famSheet);
+      renderChip();
+      toast('저장했어요');
+    });
+  });
+}
+
+// 초대 링크로 들어온 경우 (#join=코드) — 코드는 주소의 # 뒤에 있어 서버로 전송되지 않는다
+function handleJoinLink() {
+  const code = parseCode(location.hash.slice(1));
+  history.replaceState(null, '', `${location.pathname}${location.search}#today`);
+  go();
+  if (store.isDemo) return;
+  if (!cloudReady()) return toast('함께 쓰기가 아직 준비되지 않았어요');
+  if (!code) return toast('초대 링크가 올바르지 않아요');
+  if (store.profile().childId === code) return toast('이미 이 하늘을 함께 쓰고 있어요');
+  famJoin(formatCode(code));
+}
+
+// ── 상단 아이 이름 + 연결 상태 ──
+function renderChip() {
+  const chip = $('#child-chip');
+  const p = store.profile();
+  chip.hidden = !store.isShared();
+  if (chip.hidden) return;
+  const s = store.syncState();
+  chip.innerHTML = `<span class="sync-dot ${s}"></span>${esc(p.childName)}`;
+  chip.title = SYNC_LABEL[s] || '';
+}
+
 // ── 토스트 ──
 let toastTimer;
 function toast(msg, action) {
@@ -264,8 +524,14 @@ function toast(msg, action) {
   toastTimer = setTimeout(() => (t.hidden = true), 4200);
 }
 
-store.subscribe(() => {
+store.subscribe((type, info) => {
+  if (type === 'error') return toast(info);
+  renderChip();
+  if (!menu.hidden) renderFamilyBox();
+  if (type !== 'change') return;
   if (active === 'forever') renderForever();
+  if (active === 'today' && !dirty && document.activeElement?.closest('#t-form') == null) fillToday();
 });
 
+renderChip();
 go();

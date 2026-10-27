@@ -21,7 +21,7 @@
 <body>
   <div class="app">
     <header class="topbar">
-      <div class="brand"><span class="brand-star"></span>새록새록</div>
+      <div class="brand"><span class="brand-star"></span>새록새록<button class="child-chip" id="child-chip" hidden></button></div>
       <button class="icon-btn" id="menu-btn" aria-label="메뉴">
         <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>
       </button>
@@ -37,6 +37,7 @@
       <div class="sheet-top"><span class="badge"></span><time></time></div>
       <blockquote></blockquote>
       <p class="note" hidden></p>
+      <p class="who" hidden></p>
       <div class="sheet-actions">
         <button class="ghost" data-act="edit">고쳐 쓰기</button>
         <button class="secondary" data-act="close">닫기</button>
@@ -45,14 +46,19 @@
   </div>
 
   <div class="sheet" id="menu-sheet" hidden>
-    <div class="sheet-card" role="dialog" aria-modal="true">
+    <div class="sheet-card menu-card" role="dialog" aria-modal="true">
+      <section id="family-box" class="menu-section"></section>
       <h3>하늘 보관하기</h3>
-      <p class="menu-desc">기록은 이 기기의 브라우저에만 저장돼요. 가끔 파일로 내보내 두면 안전해요.</p>
+      <p class="menu-desc">가끔 파일로 내보내 두면 안전해요.</p>
       <button class="menu-item" id="m-export">파일로 내보내기</button>
       <label class="menu-item">파일에서 가져오기<input type="file" id="m-import" accept="application/json,.json" hidden></label>
       <a class="menu-item" id="m-demo" href="?demo">예시 하늘 구경하기</a>
       <div class="sheet-actions"><button class="secondary" data-act="close">닫기</button></div>
     </div>
+  </div>
+
+  <div class="sheet" id="family-sheet" hidden>
+    <div class="sheet-card" role="dialog" aria-modal="true"><div id="family-body"></div></div>
   </div>
 
   <div class="toast" id="toast" role="status" hidden></div>

@@ -22,7 +22,7 @@ export function mountWeek(el, { store, showEntry, state }) {
   const cv = setupCanvas(canvas, () => (backdrop = null));
   let days, entries, pts, rec, t0;
 
-  function load() {
+  function load(animate = true) {
     state.week = ws;
     days = Array.from({ length: 7 }, (_, i) => D.addDays(ws, i));
     entries = days.map((d) => store.get(d));
@@ -33,8 +33,10 @@ export function mountWeek(el, { store, showEntry, state }) {
       y = clamp(y + (R() - 0.5) * 0.44, 0.2, 0.78);
       return { x: 0.1 + (0.8 * i) / 6 + (R() - 0.5) * 0.07, y, ph: R() * 6.28 };
     });
-    t0 = performance.now();
-    backdrop = null;
+    if (animate) {
+      t0 = performance.now();
+      backdrop = null;
+    }
 
     el.querySelector('h2').textContent = `${D.weekLabel(ws)} 별자리`;
     el.querySelector('.title p').textContent = `${D.fmtDot(ws)} – ${D.fmtDot(D.addDays(ws, 6))}`;
@@ -48,7 +50,7 @@ export function mountWeek(el, { store, showEntry, state }) {
             <span class="dot ${e.level}"></span>
             <span class="when">${D.WD[D.fromKey(e.date).getDay()]}</span>
             <span class="txt">${esc(e.text)}</span>
-            <span class="lv">${levelOf(e.level).label}</span></button></li>`;
+            <span class="lv">${levelOf(e.level).label}${store.isShared() && e.author ? ` · ${esc(e.author)}` : ''}</span></button></li>`;
         }).join('')
       : `<li class="quiet">고요한 하늘이에요</li>`;
   }
@@ -126,9 +128,12 @@ export function mountWeek(el, { store, showEntry, state }) {
 
   load();
   const stop = loop(draw);
+  // 가족이 새로 띄운 별이 바로 보이도록
+  const unsub = store.subscribe((type) => type === 'change' && load(false));
   return {
     unmount() {
       stop();
+      unsub();
       cv.destroy();
     },
   };
