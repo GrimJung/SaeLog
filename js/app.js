@@ -245,13 +245,25 @@ function openSheet(s) {
 }
 function closeSheet(s) {
   s.classList.remove('open');
-  setTimeout(() => (s.hidden = true), 220);
+  setTimeout(() => !s.classList.contains('open') && (s.hidden = true), 220); // 그 사이 다시 열렸으면 그대로
 }
-document.querySelectorAll('.sheet').forEach((s) =>
+// 바깥(어두운 배경)을 눌러 닫기 — 누르기 시작한 곳과 뗀 곳이 모두 배경일 때만.
+// 입력 칸이 있는 창은 바깥을 눌러도 닫지 않는다. 사파리 자동 완성 막대 등을 누른 터치가
+// 배경으로 새어 들어와 쓰던 내용이 날아가는 일을 막기 위해서. (취소·닫기 버튼으로만 닫힘)
+document.querySelectorAll('.sheet').forEach((s) => {
+  let downOnBackdrop = false;
+  s.addEventListener('pointerdown', (ev) => (downOnBackdrop = ev.target === s));
   s.addEventListener('click', (ev) => {
-    if (ev.target === s || ev.target.closest('[data-act=close]')) closeSheet(s);
-  })
-);
+    if (ev.target.closest('[data-act=close]')) return closeSheet(s);
+    if (ev.target !== s || !downOnBackdrop) return;
+    downOnBackdrop = false;
+    if (s.querySelector('form')) {
+      document.activeElement?.blur?.(); // 키보드만 내린다
+      return;
+    }
+    closeSheet(s);
+  });
+});
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') document.querySelectorAll('.sheet.open').forEach(closeSheet);
 });
@@ -351,7 +363,7 @@ const NICKS = ['엄마', '아빠', '할머니', '할아버지'];
 function birthField(value = '') {
   const max = D.todayKey().slice(0, 7);
   return `<label class="field"><span>출생 연월 <em>선택 · 은하수에 개월 수가 보여요</em></span>
-      <input name="birth" type="month" min="2000-01" max="${max}" placeholder="예: 2025-03" value="${esc(value || '')}"></label>`;
+      <input name="birth" type="month" autocomplete="off" min="2000-01" max="${max}" placeholder="예: 2025-03" value="${esc(value || '')}"></label>`;
 }
 // type=month 를 지원하지 않는 브라우저에선 글자로 들어오므로 '2025.3', '2025-03' 등을 정리
 function readBirth(f) {
@@ -364,12 +376,12 @@ function readBirth(f) {
 }
 function nickField(value = '') {
   return `<label class="field"><span>내 호칭 <em>기록 옆에 표시돼요</em></span>
-      <input name="nick" maxlength="10" required placeholder="예: 엄마" value="${esc(value)}"></label>
+      <input name="nick_search" maxlength="10" required autocomplete="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="예: 엄마" value="${esc(value)}"></label>
     <div class="chips">${NICKS.map((n) => `<button type="button" class="chip" data-nick="${n}">${n}</button>`).join('')}</div>`;
 }
 famSheet.addEventListener('click', (ev) => {
   const chip = ev.target.closest('[data-nick]');
-  if (chip) chip.closest('form').nick.value = chip.dataset.nick;
+  if (chip) chip.closest('form').nick_search.value = chip.dataset.nick;
 });
 
 async function busy(btn, label, fn) {
@@ -399,8 +411,8 @@ function famStart() {
   const n = store.localCount();
   fam(`<h3>함께 쓰기 시작하기</h3>
     <p class="menu-desc">우리 아이의 하늘을 하나 만들어요. 만든 뒤 초대 링크를 가족에게 보내면 돼요.</p>
-    <form id="f-start">
-      <label class="field"><span>아이 이름</span><input name="child" maxlength="20" required placeholder="예: 새록이" value="${esc(store.profile().childName || '')}"></label>
+    <form id="f-start" autocomplete="off">
+      <label class="field"><span>아이 이&#8203;름</span><input name="kid_search" maxlength="20" required autocomplete="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="예: 새록이" value="${esc(store.profile().childName || '')}"></label>
       ${birthField(store.profile().birth)}
       ${nickField(store.profile().nickname)}
       ${n ? `<p class="menu-desc small">이 기기에 있던 별 ${n}개도 함께 올라가요.</p>` : ''}
@@ -410,8 +422,8 @@ function famStart() {
   $('#f-start').addEventListener('submit', (ev) => {
     ev.preventDefault();
     const f = ev.target;
-    const child = f.child.value.trim();
-    const nick = f.nick.value.trim();
+    const child = f.kid_search.value.trim();
+    const nick = f.nick_search.value.trim();
     if (!child || !nick) return;
     busy(f.querySelector('.strong'), '만드는 중…', async () => {
       await store.startFamily(child, nick, readBirth(f));
@@ -427,7 +439,7 @@ function famJoin(code = '') {
   const n = store.localCount();
   fam(`<h3>초대 코드로 참여하기</h3>
     <p class="menu-desc">가족에게 받은 링크나 코드를 붙여넣어 주세요.</p>
-    <form id="f-join">
+    <form id="f-join" autocomplete="off">
       <label class="field"><span>초대 코드</span>
         <input name="code" required autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="xxxxx-xxxxx-xxxxx-xxxxx" value="${esc(code)}"></label>
       ${nickField(p.nickname)}
@@ -439,7 +451,7 @@ function famJoin(code = '') {
   $('#f-join').addEventListener('submit', (ev) => {
     ev.preventDefault();
     const f = ev.target;
-    const nick = f.nick.value.trim();
+    const nick = f.nick_search.value.trim();
     if (!nick) return;
     busy(f.querySelector('.strong'), '연결하는 중…', async () => {
       const child = await store.joinFamily(f.code.value, nick, !!f.merge?.checked);
@@ -485,8 +497,8 @@ function famProfile() {
   const p = store.profile();
   const sh = store.isShared();
   fam(`<h3>${sh ? '아이 정보·호칭 바꾸기' : '아이 정보'}</h3>
-    <form id="f-prof">
-      <label class="field"><span>아이 이름 ${sh ? '<em>가족 모두에게 바뀌어요</em>' : ''}</span><input name="child" maxlength="20" ${sh ? 'required' : ''} placeholder="예: 새록이" value="${esc(p.childName || '')}"></label>
+    <form id="f-prof" autocomplete="off">
+      <label class="field"><span>아이 이&#8203;름 ${sh ? '<em>가족 모두에게 바뀌어요</em>' : ''}</span><input name="kid_search" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" ${sh ? 'required' : ''} placeholder="예: 새록이" value="${esc(p.childName || '')}"></label>
       ${birthField(p.birth)}
       ${sh ? nickField(p.nickname) + '<p class="menu-desc small">이미 띄운 별의 이름표는 그대로 남아요.</p>' : ''}
       <p class="form-err" hidden></p>
@@ -495,8 +507,8 @@ function famProfile() {
   $('#f-prof').addEventListener('submit', (ev) => {
     ev.preventDefault();
     const f = ev.target;
-    const child = f.child.value.trim();
-    const nick = sh ? f.nick.value.trim() : '';
+    const child = f.kid_search.value.trim();
+    const nick = sh ? f.nick_search.value.trim() : '';
     if (sh && (!child || !nick)) return;
     busy(f.querySelector('.strong'), '저장하는 중…', async () => {
       await store.setChild({ name: child, birth: readBirth(f) });
