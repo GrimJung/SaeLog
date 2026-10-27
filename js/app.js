@@ -264,6 +264,25 @@ document.querySelectorAll('.sheet').forEach((s) => {
     closeSheet(s);
   });
 });
+// 키보드가 올라오면 창이 키보드(와 자동 완성 막대) 위로 올라오도록
+// 실제로 보이는 영역(visualViewport)에 창을 맞춘다.
+if (window.visualViewport) {
+  const vv = window.visualViewport;
+  const fitSheets = () => {
+    const root = document.documentElement.style;
+    root.setProperty('--vvt', `${vv.offsetTop}px`);
+    root.setProperty('--vvh', `${vv.height}px`);
+  };
+  vv.addEventListener('resize', fitSheets);
+  vv.addEventListener('scroll', fitSheets);
+  fitSheets();
+}
+// 창 안의 칸을 누르면, 그 칸이 보이도록 창 안에서 스크롤
+document.addEventListener('focusin', (ev) => {
+  if (!ev.target.matches?.('.sheet input, .sheet textarea')) return;
+  setTimeout(() => ev.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 300);
+});
+
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') document.querySelectorAll('.sheet.open').forEach(closeSheet);
 });
@@ -376,7 +395,7 @@ function readBirth(f) {
 }
 function nickField(value = '') {
   return `<label class="field"><span>내 호칭 <em>기록 옆에 표시돼요</em></span>
-      <input name="nick_search" maxlength="10" required autocomplete="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="예: 엄마" value="${esc(value)}"></label>
+      <input name="nick_search" maxlength="10" required type="search" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="예: 엄마" value="${esc(value)}"></label>
     <div class="chips">${NICKS.map((n) => `<button type="button" class="chip" data-nick="${n}">${n}</button>`).join('')}</div>`;
 }
 famSheet.addEventListener('click', (ev) => {
@@ -412,7 +431,7 @@ function famStart() {
   fam(`<h3>함께 쓰기 시작하기</h3>
     <p class="menu-desc">우리 아이의 하늘을 하나 만들어요. 만든 뒤 초대 링크를 가족에게 보내면 돼요.</p>
     <form id="f-start" autocomplete="off">
-      <label class="field"><span>아이 이&#8203;름</span><input name="kid_search" maxlength="20" required autocomplete="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="예: 새록이" value="${esc(store.profile().childName || '')}"></label>
+      <label class="field"><span>아이 이&#8203;름</span><input name="kid_search" maxlength="20" required type="search" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="예: 새록이" value="${esc(store.profile().childName || '')}"></label>
       ${birthField(store.profile().birth)}
       ${nickField(store.profile().nickname)}
       ${n ? `<p class="menu-desc small">이 기기에 있던 별 ${n}개도 함께 올라가요.</p>` : ''}
@@ -498,7 +517,7 @@ function famProfile() {
   const sh = store.isShared();
   fam(`<h3>${sh ? '아이 정보·호칭 바꾸기' : '아이 정보'}</h3>
     <form id="f-prof" autocomplete="off">
-      <label class="field"><span>아이 이&#8203;름 ${sh ? '<em>가족 모두에게 바뀌어요</em>' : ''}</span><input name="kid_search" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" ${sh ? 'required' : ''} placeholder="예: 새록이" value="${esc(p.childName || '')}"></label>
+      <label class="field"><span>아이 이&#8203;름 ${sh ? '<em>가족 모두에게 바뀌어요</em>' : ''}</span><input name="kid_search" maxlength="20" type="search" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" ${sh ? 'required' : ''} placeholder="예: 새록이" value="${esc(p.childName || '')}"></label>
       ${birthField(p.birth)}
       ${sh ? nickField(p.nickname) + '<p class="menu-desc small">이미 띄운 별의 이름표는 그대로 남아요.</p>' : ''}
       <p class="form-err" hidden></p>

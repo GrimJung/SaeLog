@@ -245,14 +245,17 @@ body[data-view='year'] .demo-banner { display: none; }
 .empty .star-ico { margin-bottom: 22px; }
 
 /* ── 시트 ── */
+/* 높이·위치는 실제로 보이는 영역에 맞춘다 (키보드가 올라오면 그만큼 줄어든다 — app.js) */
 .sheet {
-  position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center;
+  position: fixed; left: 0; right: 0; top: var(--vvt, 0px); height: var(--vvh, 100%);
+  z-index: 40; display: flex; align-items: flex-end; justify-content: center;
   background: rgba(3, 5, 15, 0); transition: background 0.22s;
 }
 .sheet.open { background: rgba(3, 5, 15, 0.55); }
 .sheet-card {
   width: 100%; max-width: 560px; padding: 26px 24px calc(18px + env(safe-area-inset-bottom));
   border-radius: 26px 26px 0 0; background: #121736; border-top: 1px solid var(--line);
+  max-height: calc(100% - 16px); overflow-y: auto; overscroll-behavior: contain;
   transform: translateY(100%); transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .sheet.open .sheet-card { transform: none; }
@@ -313,6 +316,10 @@ body[data-view='year'] .demo-banner { display: none; }
 }
 .field input:focus { border-color: rgba(255, 217, 138, 0.35); }
 .field input::placeholder { color: var(--ink3); }
+/* 사파리 연락처 자동 완성을 피하려고 type=search 를 쓰지만, 보기엔 보통 칸처럼 */
+.field input[type='search'] { -webkit-appearance: none; appearance: none; }
+.field input[type='search']::-webkit-search-cancel-button,
+.field input[type='search']::-webkit-search-decoration { -webkit-appearance: none; display: none; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .chip { border: 1px solid var(--line); background: none; color: var(--ink2); padding: 7px 14px; border-radius: 999px; font-size: 13px; }
 .chip:hover { background: var(--card2); }
