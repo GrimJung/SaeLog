@@ -11,9 +11,9 @@ import { rng } from './sky.js';
 import * as cloud from './cloud.js';
 
 export const LEVELS = [
-  { id: 'pisik', label: '피식', desc: '웃겼던 말' },
-  { id: 'mungkeul', label: '뭉클', desc: '찡했던 말' },
-  { id: 'forever', label: '평생기억', desc: '절대 잊고 싶지 않은 말' },
+  { id: 'pisik', label: '피식', desc: '완전 빵 터졌어' },
+  { id: 'mungkeul', label: '뭉클', desc: '마음이 찡했어' },
+  { id: 'forever', label: '평생기억', desc: '평생 잊지 않을게' },
 ];
 export const levelOf = (id) => LEVELS.find((l) => l.id === id) || LEVELS[0];
 

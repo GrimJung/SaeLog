@@ -375,7 +375,7 @@ function fam(html) {
   $('#family-body').innerHTML = html;
   closeSheet(menu);
   openSheet(famSheet);
-  $('#family-body input:not([type=checkbox])')?.focus({ preventScroll: true });
+  // 창만 띄운다. 칸을 눌러야 키보드가 올라온다 (바로 키보드가 올라오면 창이 가려져서)
 }
 
 const NICKS = ['엄마', '아빠', '할머니', '할아버지'];
