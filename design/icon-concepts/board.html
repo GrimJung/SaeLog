@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: 'Jura'; src: url('file:///Users/hg229/Library/Application%20Support/Claude/local-agent-mode-sessions/skills-plugin/6cb2211d-3519-4065-8e7b-ff44d97ea3b6/0ab4aa2a-90d3-4066-9759-9dc4b2f0ab49/skills/canvas-design/canvas-fonts/Jura-Light.ttf'); }
+  @font-face { font-family: 'ISerif'; src: url('file:///Users/hg229/Library/Application%20Support/Claude/local-agent-mode-sessions/skills-plugin/6cb2211d-3519-4065-8e7b-ff44d97ea3b6/0ab4aa2a-90d3-4066-9759-9dc4b2f0ab49/skills/canvas-design/canvas-fonts/InstrumentSerif-Italic.ttf'); }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1800px; height: 1040px; background: #05081a; }
+  body {
+    position: relative; overflow: hidden; color: #ece8f6;
+    font-family: 'Apple SD Gothic Neo', sans-serif;
+    background:
+      radial-gradient(1200px 700px at 50% -10%, rgba(108, 111, 216, 0.14), transparent 70%),
+      #05081a;
+  }
+  header { position: absolute; top: 84px; left: 120px; right: 120px; display: flex; justify-content: space-between; align-items: baseline; }
+  header h1 { font-family: 'Apple SD Gothic Neo', sans-serif; font-weight: 300; font-size: 40px; letter-spacing: -0.01em; color: #ece8f6; }
+  header h1 span { color: #ffd98a; }
+  header p { font-family: 'Jura', sans-serif; font-size: 15px; letter-spacing: 0.32em; color: #75739a; text-transform: uppercase; }
+  .rule { position: absolute; top: 160px; left: 120px; right: 120px; height: 1px; background: rgba(255,255,255,0.08); }
+  .grid { position: absolute; top: 230px; left: 120px; right: 120px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .col { display: flex; flex-direction: column; align-items: center; }
+  .col + .col { border-left: 1px solid rgba(255,255,255,0.06); }
+  .icon { border-radius: 22.37%; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06); }
+  .icon img { display: block; width: 100%; height: 100%; }
+  .big { width: 330px; height: 330px; }
+  .mark { margin-top: 46px; font-family: 'Jura', sans-serif; font-size: 14px; letter-spacing: 0.4em; color: #ffd98a; }
+  .name { margin-top: 12px; font-size: 26px; font-weight: 500; letter-spacing: -0.01em; }
+  .desc { margin-top: 10px; font-size: 15px; line-height: 1.7; color: #8f8db3; text-align: center; }
+  .sizes { margin-top: 40px; display: flex; align-items: flex-end; gap: 26px; }
+  .s120 { width: 120px; height: 120px; }
+  .s60 { width: 60px; height: 60px; }
+  .s29 { width: 29px; height: 29px; box-shadow: 0 0 0 1px rgba(255,255,255,0.06); }
+  .size-label { margin-top: 12px; font-family: 'Jura', sans-serif; font-size: 11px; letter-spacing: 0.3em; color: #4e4c74; }
+  footer { position: absolute; bottom: 56px; left: 120px; right: 120px; display: flex; justify-content: space-between; font-family: 'Jura', sans-serif; font-size: 12px; letter-spacing: 0.3em; color: #3d3b63; }
+  .swatches { display: flex; gap: 14px; align-items: center; }
+  .swatches i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>새록새록 <span>·</span> 앱 아이콘 시안</h1>
+    <p>Quiet Luminance — study 01</p>
+  </header>
+  <div class="rule"></div>
+
+  <div class="grid">
+    <div class="col">
+      <div class="icon big"><img src="a-speech-star.svg"></div>
+      <p class="mark">A</p>
+      <p class="name">말풍선 별</p>
+      <p class="desc">아이가 한 말이<br>그대로 별이 된다</p>
+      <div class="sizes"><div class="icon s120"><img src="a-speech-star.svg"></div><div class="icon s60"><img src="a-speech-star.svg"></div><div class="icon s29"><img src="a-speech-star.svg"></div></div>
+      <p class="size-label">120 · 60 · 29</p>
+    </div>
+    <div class="col">
+      <div class="icon big"><img src="b-sleepy-word.svg"></div>
+      <p class="mark">B</p>
+      <p class="name">잠든 아이의 말</p>
+      <p class="desc">아이를 재운 밤, 오늘의 한마디가<br>새록새록 돋아나 별이 된다</p>
+      <div class="sizes"><div class="icon s120"><img src="b-sleepy-word.svg"></div><div class="icon s60"><img src="b-sleepy-word.svg"></div><div class="icon s29"><img src="b-sleepy-word.svg"></div></div>
+      <p class="size-label">120 · 60 · 29</p>
+    </div>
+    <div class="col">
+      <div class="icon big"><img src="c-quote-constellation.svg"></div>
+      <p class="mark">C</p>
+      <p class="name">따옴표 별자리</p>
+      <p class="desc">말을 여는 따옴표가<br>별과 이어져 별자리가 된다</p>
+      <div class="sizes"><div class="icon s120"><img src="c-quote-constellation.svg"></div><div class="icon s60"><img src="c-quote-constellation.svg"></div><div class="icon s29"><img src="c-quote-constellation.svg"></div></div>
+      <p class="size-label">120 · 60 · 29</p>
+    </div>
+  </div>
+
+  <footer>
+    <span>night sky palette</span>
+    <span class="swatches"><i style="background:#080c22;box-shadow:0 0 0 1px #2a2d55"></i><i style="background:#1a1d47"></i><i style="background:#b9b7ff"></i><i style="background:#ffd98a"></i><i style="background:#fff3d2"></i></span>
+  </footer>
+</body>
+</html>

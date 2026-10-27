@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+    <stop offset="0" stop-color="#080c22"/><stop offset="1" stop-color="#1a1d47"/>
+  </linearGradient>
+  <radialGradient id="haze" cx="0.5" cy="0.42" r="0.6">
+    <stop offset="0" stop-color="#6c6fd8" stop-opacity="0.16"/><stop offset="1" stop-color="#6c6fd8" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="glowGold">
+    <stop offset="0" stop-color="#ffd98a" stop-opacity="0.75"/>
+    <stop offset="0.25" stop-color="#ffd98a" stop-opacity="0.28"/>
+    <stop offset="1" stop-color="#ffd98a" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="glowLav">
+    <stop offset="0" stop-color="#b9b7ff" stop-opacity="0.6"/>
+    <stop offset="0.3" stop-color="#b9b7ff" stop-opacity="0.18"/>
+    <stop offset="1" stop-color="#b9b7ff" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="goldInk" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffe7b0"/><stop offset="1" stop-color="#f3c46e"/>
+  </linearGradient>
+  <radialGradient id="blush">
+    <stop offset="0" stop-color="#ffb18a" stop-opacity="0.55"/><stop offset="1" stop-color="#ffb18a" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>
+</defs><rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#haze)"/><circle cx="537" cy="165" r="3" fill="#dfe3ff" opacity="0.52"/><circle cx="918" cy="929" r="1.6" fill="#dfe3ff" opacity="0.29"/><circle cx="136" cy="325" r="2.4" fill="#dfe3ff" opacity="0.54"/><circle cx="928" cy="783" r="3.6" fill="#dfe3ff" opacity="0.35"/><circle cx="439" cy="78" r="3.6" fill="#dfe3ff" opacity="0.66"/><circle cx="131" cy="583" r="1.6" fill="#dfe3ff" opacity="0.40"/><circle cx="89" cy="82" r="2" fill="#dfe3ff" opacity="0.58"/><circle cx="345" cy="271" r="2.4" fill="#dfe3ff" opacity="0.53"/><circle cx="616" cy="113" r="3" fill="#dfe3ff" opacity="0.30"/><circle cx="185" cy="380" r="1.6" fill="#dfe3ff" opacity="0.70"/><circle cx="127" cy="208" r="3.6" fill="#dfe3ff" opacity="0.55"/><circle cx="93" cy="229" r="2.4" fill="#dfe3ff" opacity="0.31"/><circle cx="169" cy="217" r="3.6" fill="#dfe3ff" opacity="0.48"/><circle cx="880" cy="78" r="2.4" fill="#dfe3ff" opacity="0.28"/><circle cx="130" cy="151" r="2.4" fill="#dfe3ff" opacity="0.27"/><circle cx="863" cy="690" r="2.4" fill="#dfe3ff" opacity="0.59"/><circle cx="911" cy="582" r="1.6" fill="#dfe3ff" opacity="0.37"/><circle cx="946" cy="801" r="2.4" fill="#dfe3ff" opacity="0.68"/><circle cx="839" cy="830" r="1.6" fill="#dfe3ff" opacity="0.63"/><circle cx="500" cy="130" r="3" fill="#dfe3ff" opacity="0.52"/><circle cx="567" cy="217" r="3.6" fill="#dfe3ff" opacity="0.57"/><circle cx="502" cy="900" r="2" fill="#dfe3ff" opacity="0.57"/><circle cx="668" cy="905" r="2" fill="#dfe3ff" opacity="0.32"/><circle cx="910" cy="810" r="2" fill="#dfe3ff" opacity="0.68"/><circle cx="620" cy="164" r="3" fill="#dfe3ff" opacity="0.35"/><circle cx="86" cy="170" r="3.6" fill="#dfe3ff" opacity="0.25"/><path d="M457,419 L685,419 L792,258" fill="none" stroke="#b9b7ff" stroke-width="7" stroke-linecap="round" stroke-dasharray="2 22" opacity="0.8"/><circle cx="400" cy="632" r="202.4" fill="url(#glowGold)" opacity="0.8"/><circle cx="628" cy="632" r="202.4" fill="url(#glowGold)" opacity="0.8"/><path d="M310.8,611.8 C310.8,507.8 367.8,443.4 457.0,418.6 C411.0,457.2 395.4,503.2 433.1,546.4 A92,92 0 1 1 310.8,611.8Z" fill="url(#goldInk)"/><path d="M538.8,611.8 C538.8,507.8 595.8,443.4 685.0,418.6 C639.0,457.2 623.4,503.2 661.1,546.4 A92,92 0 1 1 538.8,611.8Z" fill="url(#goldInk)"/><circle cx="457" cy="419" r="9" fill="#fff3d2" opacity="0.9"/><circle cx="685" cy="419" r="9" fill="#fff3d2" opacity="0.9"/><circle cx="792" cy="258" r="162.8" fill="url(#glowGold)"/><path d="M792.0,184.0 C801.6,248.4 801.6,248.4 866.0,258.0 C801.6,267.6 801.6,267.6 792.0,332.0 C782.4,267.6 782.4,267.6 718.0,258.0 C782.4,248.4 782.4,248.4 792.0,184.0Z" fill="#fff3d2" opacity="1.0"/><circle cx="792" cy="258" r="8.1" fill="#ffffff"/></svg>

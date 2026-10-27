@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+    <stop offset="0" stop-color="#080c22"/><stop offset="1" stop-color="#1a1d47"/>
+  </linearGradient>
+  <radialGradient id="haze" cx="0.5" cy="0.42" r="0.6">
+    <stop offset="0" stop-color="#6c6fd8" stop-opacity="0.16"/><stop offset="1" stop-color="#6c6fd8" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="glowGold">
+    <stop offset="0" stop-color="#ffd98a" stop-opacity="0.75"/>
+    <stop offset="0.25" stop-color="#ffd98a" stop-opacity="0.28"/>
+    <stop offset="1" stop-color="#ffd98a" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="glowLav">
+    <stop offset="0" stop-color="#b9b7ff" stop-opacity="0.6"/>
+    <stop offset="0.3" stop-color="#b9b7ff" stop-opacity="0.18"/>
+    <stop offset="1" stop-color="#b9b7ff" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="goldInk" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffe7b0"/><stop offset="1" stop-color="#f3c46e"/>
+  </linearGradient>
+  <radialGradient id="blush">
+    <stop offset="0" stop-color="#ffb18a" stop-opacity="0.55"/><stop offset="1" stop-color="#ffb18a" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>
+</defs><rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#haze)"/><circle cx="153" cy="338" r="1.6" fill="#dfe3ff" opacity="0.49"/><circle cx="805" cy="126" r="1.6" fill="#dfe3ff" opacity="0.34"/><circle cx="284" cy="97" r="3" fill="#dfe3ff" opacity="0.40"/><circle cx="74" cy="145" r="2.4" fill="#dfe3ff" opacity="0.43"/><circle cx="557" cy="894" r="1.6" fill="#dfe3ff" opacity="0.57"/><circle cx="326" cy="132" r="1.6" fill="#dfe3ff" opacity="0.43"/><circle cx="917" cy="819" r="1.6" fill="#dfe3ff" opacity="0.35"/><circle cx="890" cy="116" r="3" fill="#dfe3ff" opacity="0.69"/><circle cx="308" cy="147" r="2.4" fill="#dfe3ff" opacity="0.26"/><circle cx="432" cy="886" r="2" fill="#dfe3ff" opacity="0.36"/><circle cx="159" cy="123" r="3" fill="#dfe3ff" opacity="0.33"/><circle cx="928" cy="780" r="2.4" fill="#dfe3ff" opacity="0.70"/><circle cx="87" cy="236" r="3.6" fill="#dfe3ff" opacity="0.54"/><circle cx="159" cy="945" r="2" fill="#dfe3ff" opacity="0.45"/><circle cx="78" cy="610" r="2.4" fill="#dfe3ff" opacity="0.42"/><circle cx="136" cy="255" r="2" fill="#dfe3ff" opacity="0.26"/><circle cx="806" cy="190" r="3" fill="#dfe3ff" opacity="0.33"/><circle cx="206" cy="873" r="3.6" fill="#dfe3ff" opacity="0.36"/><circle cx="901" cy="244" r="3" fill="#dfe3ff" opacity="0.65"/><circle cx="162" cy="104" r="2.4" fill="#dfe3ff" opacity="0.36"/><circle cx="707" cy="131" r="2" fill="#dfe3ff" opacity="0.47"/><circle cx="136" cy="258" r="2" fill="#dfe3ff" opacity="0.59"/><circle cx="131" cy="434" r="2" fill="#dfe3ff" opacity="0.28"/><circle cx="390" cy="858" r="2.4" fill="#dfe3ff" opacity="0.55"/><circle cx="194" cy="101" r="1.6" fill="#dfe3ff" opacity="0.46"/><circle cx="100" cy="599" r="1.6" fill="#dfe3ff" opacity="0.47"/><path d="M432,250 H592 A210,210 0 0 1 802,460 V490 A210,210 0 0 1 592,700 H502 L292,792 L428,696 A210,210 0 0 1 222,490 V460 A210,210 0 0 1 432,250Z" fill="#ffd98a" fill-opacity="0.05" stroke="#ffd98a" stroke-width="40" stroke-linejoin="round" opacity="0.35" filter="url(#soft)"/><path d="M432,250 H592 A210,210 0 0 1 802,460 V490 A210,210 0 0 1 592,700 H502 L292,792 L428,696 A210,210 0 0 1 222,490 V460 A210,210 0 0 1 432,250Z" fill="none" stroke="#ffd98a" stroke-width="22" stroke-linejoin="round"/><circle cx="512" cy="475" r="303.6" fill="url(#glowGold)"/><path d="M512.0,337.0 C529.9,457.1 529.9,457.1 650.0,475.0 C529.9,492.9 529.9,492.9 512.0,613.0 C494.1,492.9 494.1,492.9 374.0,475.0 C494.1,457.1 494.1,457.1 512.0,337.0Z" fill="#fff3d2" opacity="1.0"/><circle cx="512" cy="475" r="15.2" fill="#ffffff"/><path d="M655.0,322.0 C658.9,348.1 658.9,348.1 685.0,352.0 C658.9,355.9 658.9,355.9 655.0,382.0 C651.1,355.9 651.1,355.9 625.0,352.0 C651.1,348.1 651.1,348.1 655.0,322.0Z" fill="#fff3d2" opacity="0.75"/></svg>
