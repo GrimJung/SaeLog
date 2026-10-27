@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1026">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="새록새록">
+  <meta name="description" content="오늘 아이가 한 말, 언젠가 새록새록 떠오르게">
+  <title>새록새록</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-star"></span>새록새록</div>
+      <button class="icon-btn" id="menu-btn" aria-label="메뉴">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>
+      </button>
+    </header>
+    <p class="demo-banner" id="demo-banner" hidden>예시 하늘이에요 · 여기서 쓴 기록은 저장되지 않아요</p>
+    <main id="views"></main>
+  </div>
+
+  <nav class="tabbar"><div class="inner" id="tabs" role="tablist"></div></nav>
+
+  <div class="sheet" id="entry-sheet" hidden>
+    <div class="sheet-card" role="dialog" aria-modal="true">
+      <div class="sheet-top"><span class="badge"></span><time></time></div>
+      <blockquote></blockquote>
+      <p class="note" hidden></p>
+      <div class="sheet-actions">
+        <button class="ghost" data-act="edit">고쳐 쓰기</button>
+        <button class="secondary" data-act="close">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet" id="menu-sheet" hidden>
+    <div class="sheet-card" role="dialog" aria-modal="true">
+      <h3>하늘 보관하기</h3>
+      <p class="menu-desc">기록은 이 기기의 브라우저에만 저장돼요. 가끔 파일로 내보내 두면 안전해요.</p>
+      <button class="menu-item" id="m-export">파일로 내보내기</button>
+      <label class="menu-item">파일에서 가져오기<input type="file" id="m-import" accept="application/json,.json" hidden></label>
+      <a class="menu-item" id="m-demo" href="?demo">예시 하늘 구경하기</a>
+      <div class="sheet-actions"><button class="secondary" data-act="close">닫기</button></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

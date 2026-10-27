@@ -1,0 +1,15 @@
+{
+  "name": "새록새록",
+  "short_name": "새록새록",
+  "description": "오늘 아이가 한 말, 언젠가 새록새록 떠오르게",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#070b1d",
+  "theme_color": "#0b1026",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
