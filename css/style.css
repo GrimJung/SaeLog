@@ -190,7 +190,6 @@ button:disabled { cursor: default; opacity: 0.35; }
 
 .sky-week {
   margin: 0 -20px; height: min(54vh, 440px); min-height: 300px;
-  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
 }
 .sky-week canvas { cursor: pointer; }
 
@@ -218,7 +217,7 @@ body[data-view='year'] .demo-banner { display: none; }
 .sky-year canvas:active { cursor: grabbing; }
 .year-head {
   position: absolute; top: 0; left: 0; right: 0; padding: 8px 12px;
-  background: linear-gradient(180deg, rgba(7, 11, 29, 0.7), transparent); pointer-events: none;
+  pointer-events: none;
 }
 .year-head > * { pointer-events: auto; }
 .zoom-ctl {

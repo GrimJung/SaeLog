@@ -93,7 +93,8 @@ export function mountWeek(el, { store, showEntry, state }) {
   function draw(t) {
     const { ctx, w, h, dpr } = cv;
     if (!w) return;
-    if (!backdrop) backdrop = makeBackdrop(w, h, dpr, hash(ws));
+    if (!backdrop) backdrop = makeBackdrop(w, h, dpr, hash(ws), { top: 90, bottom: 160 });
+    ctx.clearRect(0, 0, w, h);
     ctx.drawImage(backdrop, 0, 0, w, h);
     const age = t - t0;
 

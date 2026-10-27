@@ -603,7 +603,8 @@ export function mountYear(el, { store, showEntry, state }) {
         done?.();
       }
     }
-    if (!backdrop) backdrop = makeBackdrop(w, h, dpr, hash('year'));
+    if (!backdrop) backdrop = makeBackdrop(w, h, dpr, hash('year'), { top: 160, bottom: 0 });
+    ctx.clearRect(0, 0, w, h);
     ctx.drawImage(backdrop, 0, 0, w, h);
     if (mode === 'uni') drawUni(t);
     else drawYear(t, world, cam, starsOf(year), 1);

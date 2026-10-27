@@ -103,7 +103,8 @@ export function drawStar(ctx, x, y, level, r, alpha = 1) {
 }
 
 // 기록과 무관한 배경 하늘 (아주 희미한 먼 별들)
-export function makeBackdrop(w, h, dpr, seed) {
+// fade: 위·아래 가장자리를 투명하게 녹여 페이지 배경과 경계 없이 이어지게 (px)
+export function makeBackdrop(w, h, dpr, seed, fade = { top: 0, bottom: 0 }) {
   const c = document.createElement('canvas');
   c.width = Math.max(1, Math.round(w * dpr));
   c.height = Math.max(1, Math.round(h * dpr));
@@ -134,6 +135,19 @@ export function makeBackdrop(w, h, dpr, seed) {
     g.fillStyle = `rgba(210,215,255,${0.06 + R() * 0.28})`;
     const s = R() < 0.93 ? 0.6 : 1.1;
     g.fillRect(R() * w, R() * h, s, s);
+  }
+  if (fade.top || fade.bottom) {
+    const m = g.createLinearGradient(0, 0, 0, h);
+    const t = Math.min(0.45, (fade.top || 0) / h);
+    const b = Math.min(0.45, (fade.bottom || 0) / h);
+    m.addColorStop(0, `rgba(0,0,0,${fade.top ? 0 : 1})`);
+    m.addColorStop(t, 'rgba(0,0,0,1)');
+    m.addColorStop(1 - b, 'rgba(0,0,0,1)');
+    m.addColorStop(1, `rgba(0,0,0,${fade.bottom ? 0 : 1})`);
+    g.globalCompositeOperation = 'destination-in';
+    g.fillStyle = m;
+    g.fillRect(0, 0, w, h);
+    g.globalCompositeOperation = 'source-over';
   }
   return c;
 }

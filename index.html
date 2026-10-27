@@ -50,10 +50,13 @@
   <div class="sheet" id="menu-sheet" hidden>
     <div class="sheet-card menu-card" role="dialog" aria-modal="true">
       <section id="family-box" class="menu-section"></section>
-      <h3>하늘 보관하기</h3>
-      <p class="menu-desc">가끔 파일로 내보내 두면 안전해요.</p>
-      <button class="menu-item" id="m-export">파일로 내보내기</button>
-      <label class="menu-item">파일에서 가져오기<input type="file" id="m-import" accept="application/json,.json" hidden></label>
+      <!-- 하늘 보관하기(내보내기·가져오기)는 잠시 숨김. 다시 보이려면 hidden 만 지우면 된다 -->
+      <div class="menu-archive" hidden>
+        <h3>하늘 보관하기</h3>
+        <p class="menu-desc">가끔 파일로 내보내 두면 안전해요.</p>
+        <button class="menu-item" id="m-export">파일로 내보내기</button>
+        <label class="menu-item">파일에서 가져오기<input type="file" id="m-import" accept="application/json,.json" hidden></label>
+      </div>
       <a class="menu-item" id="m-demo" href="?demo">예시 하늘 구경하기</a>
       <div class="sheet-actions"><button class="secondary" data-act="close">닫기</button></div>
     </div>
