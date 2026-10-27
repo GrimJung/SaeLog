@@ -6,6 +6,27 @@ import { cloudReady, parseCode, formatCode } from './cloud.js';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// iOS 사파리(특히 홈 화면 앱)는 CSS touch-action 을 무시하고 '두 번 탭 확대'를 할 때가 있다.
+// 빠르게 두 번째 탭이 들어오면 사파리의 기본 동작(확대)을 막고, 누른 버튼은 직접 눌러 준다.
+// 입력 칸과 은하수 캔버스(자체 확대·축소가 있음)는 건드리지 않는다.
+{
+  let lastTap = 0;
+  document.addEventListener(
+    'touchend',
+    (ev) => {
+      const now = Date.now();
+      const quick = now - lastTap < 350;
+      lastTap = now;
+      if (!quick || ev.touches.length) return;
+      const t = ev.target;
+      if (t.closest?.('input, textarea, select, canvas, [contenteditable]')) return;
+      ev.preventDefault();
+      t.closest?.('button, a, label, [data-id]')?.click();
+    },
+    { passive: false }
+  );
+}
+
 const mode = currentMode();
 const viewState = {}; // 모드 뷰가 탭을 오가도 위치(주/연도)를 기억
 const ICONS = {
