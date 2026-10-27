@@ -197,10 +197,11 @@ form.addEventListener('submit', (ev) => {
   ev.preventDefault();
   if (tSave.disabled) return;
   const date = editDate;
-  store.upsert({ date, text: tText.value, level: form.level.value, note: tNote.value });
+  const saved = store.upsert({ date, text: tText.value, level: form.level.value, note: tNote.value });
+  const hid = saved.text !== tText.value.trim() || saved.note !== tNote.value.trim();
   rise(form.level.value);
   fillToday();
-  toast(`${D.fmtShort(date)} 하늘에 별이 떴어요`, {
+  toast(hid ? '개인정보·욕설은 * 로 가려서 별을 띄웠어요' : `${D.fmtShort(date)} 하늘에 별이 떴어요`, {
     label: `${mode.views[0].label} 보기`,
     onClick: () => {
       viewState.week = D.weekStart(date);

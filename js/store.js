@@ -11,6 +11,7 @@
 import { toKey, todayKey } from './date.js';
 import { rng, hash } from './sky.js';
 import * as cloud from './cloud.js';
+import { mask, maskEntry } from './mask.js';
 
 export const LEVELS = [
   { id: 'pisik', label: '피식', desc: '완전 빵 터졌어' },
@@ -56,6 +57,7 @@ let sync = 'local'; // local | demo | connecting | synced | pending | offline | 
 let unwatch = null;
 let unwatchChild = null;
 let migratedFor = null;
+let maskedFor = null;
 
 const shared = () => !isDemo && !!profile.childId;
 const myId = () => (isDemo ? ME : shared() ? profile.memberId || memberIdFor(profile.nickname) : ME);
@@ -69,18 +71,22 @@ function normalize(map, legacyMid) {
       const memberId = e.memberId || legacyMid(e);
       const id = entryId(e.date, memberId);
       const { editedBy, ...rest } = e;
-      if (!out[id]) out[id] = { ...rest, memberId, id };
+      if (!out[id]) out[id] = maskEntry({ ...rest, memberId, id });
     } else {
-      out[k] = { ...e, id: k };
+      out[k] = maskEntry({ ...e, id: k });
     }
   }
   return out;
 }
 
+// 가리기 전 모양 (이미 가려 저장된 것인지 비교용)
+const normalizeRaw = (m) => Object.fromEntries(Object.entries(m || {}).filter(([, e]) => e && DATE_KEY.test(e.date || '')).map(([k, e]) => [k, { ...e, id: e.id ?? k }]));
+
 function localEntries() {
   const data = ls.get(KEY) || {};
   const map = normalize(data.entries, () => ME);
-  if (data.entries && data.version !== 2) ls.set(KEY, { version: 2, entries: map }); // 한 번만 옮겨 둔다
+  // 예전 구조이거나 가리지 않은 채 저장된 기록이 있으면 가린 모양으로 다시 저장해 둔다
+  if (data.entries && (data.version !== 2 || JSON.stringify(normalizeRaw(data.entries)) !== JSON.stringify(map))) ls.set(KEY, { version: 2, entries: map });
   return map;
 }
 
@@ -124,6 +130,7 @@ async function watch() {
         if (id !== profile.childId) return;
         // 서버에서 확인된 내용일 때만 (기기에만 잠깐 반영된, 아직 거절될 수 있는 쓰기는 옮기지 않는다)
         if (!meta.fromCache && !meta.hasPendingWrites && migratedFor !== id && Object.keys(raw).some((k) => DATE_KEY.test(k))) migrate(id, raw);
+        if (!meta.fromCache && !meta.hasPendingWrites && maskedFor !== id) remask(id, raw);
         entries = normalize(raw, (e) => memberIdFor(e.author));
         ls.set(CKEY(id), entries);
         sync = meta.hasPendingWrites ? 'pending' : meta.fromCache ? 'offline' : 'synced';
@@ -142,6 +149,18 @@ async function watch() {
   }
 }
 
+// 가리지 않고 저장돼 있던 내 기록을 서버에서도 가린 모양으로 덮어쓴다 (가족 것은 각자의 기기가 한다).
+// 서버에서 확인된 내용으로 세션마다 한 번만.
+function remask(cid, raw) {
+  maskedFor = cid;
+  const me = myId();
+  const list = Object.entries(raw)
+    .filter(([k, e]) => !DATE_KEY.test(k) && e?.memberId === me)
+    .filter(([, e]) => mask(e.text) !== e.text || mask(e.note || '') !== (e.note || ''))
+    .map(([k, e]) => maskEntry({ ...e, id: k }));
+  if (list.length) cloud.putMany(cid, list).catch(writeFailed);
+}
+
 // 예전 구조(날짜당 기록 하나)를 서버에서 새 구조로 옮긴다. 쓴 사람(author)의 기록이 된다.
 // 두 기기가 동시에 옮겨도 결과가 같도록 ID 는 호칭에서 정해진다. 세션마다 한 번만 시도.
 async function migrate(cid, raw) {
@@ -158,7 +177,7 @@ async function migrate(cid, raw) {
         if (!have.has(mid)) newMembers[mid] = nickname;
         const to = entryId(e.date, mid);
         const { editedBy, ...rest } = e;
-        return { from: k, to: raw[to] ? null : to, data: { ...rest, memberId: mid, author: nickname, note: rest.note || '' } };
+        return { from: k, to: raw[to] ? null : to, data: maskEntry({ ...rest, memberId: mid, author: nickname, note: rest.note || '' }) };
       });
     await cloud.migrate(cid, newMembers, moves);
   } catch (e) {
@@ -235,7 +254,7 @@ export const store = {
     const prev = entries[id];
     const e = {
       id, date, memberId, author: shared() ? profile.nickname || '' : isDemo ? '엄마' : '',
-      text: text.trim(), level, note: note.trim(), createdAt: prev?.createdAt || now, updatedAt: now,
+      text: mask(text.trim()), level, note: mask(note.trim()), createdAt: prev?.createdAt || now, updatedAt: now,
     };
     entries = { ...entries, [id]: e };
     persist();

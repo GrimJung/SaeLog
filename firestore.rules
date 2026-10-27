@@ -48,14 +48,18 @@ service cloud.firestore {
       // 기록 — 문서 이름은 '날짜_구성원ID' (한 사람당 하루 하나)
       // 예전 구조(문서 이름이 날짜)는 새 구조로 옮긴 뒤 지울 수만 있다.
       match /entries/{entryId} {
+        // 가리지 않은 주민번호·전화번호·이메일·카드번호는 받지 않는다 (앱이 * 로 가린 뒤 저장한다)
+        function noRawPII(s) {
+          return !s.matches('(?s).*(\\d{6}\\s*-?\\s*[1-8]\\d{6}|01[016789][\\s.-]?\\d{3,4}[\\s.-]?\\d{4}|[\\w.+-]+@[\\w-]+\\.[\\w.-]+|\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{3,4}).*');
+        }
         function validEntry() {
           let d = request.resource.data;
           return d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
             && d.memberId is string && d.memberId.size() > 0 && d.memberId.size() <= 40
             && entryId == d.date + '_' + d.memberId
-            && d.text is string && d.text.size() > 0 && d.text.size() <= 1000
+            && d.text is string && d.text.size() > 0 && d.text.size() <= 1000 && noRawPII(d.text)
             && d.level in ['pisik', 'mungkeul', 'forever']
-            && (!('note' in d) || (d.note is string && d.note.size() <= 300))
+            && (!('note' in d) || (d.note is string && d.note.size() <= 300 && noRawPII(d.note)))
             && (!('author' in d) || (d.author is string && d.author.size() <= 20));
         }
         allow read: if signedIn() && childExists();
