@@ -8,6 +8,9 @@
 // - smooth: 점 사이를 부드럽게 이을지
 // - deco: 성단이 놓이지 않는 장식 선들 (눈, 물줄기 등)
 // - turn: 세로 화면이면 90° 돌려도 되는 모양 (기호·기하학)
+//
+// 특정 종교·나라·정치·단체를 떠올리게 하는 모양은 쓰지 않는다
+// (예: 오각별, 초승달, 십자가, 육각별, 물고기 표식, 국기·문장에 쓰이는 꽃·잎 등).
 
 const T = Math.PI * 2;
 
@@ -36,17 +39,6 @@ export const SHAPES = [
     },
   },
   {
-    id: 'star',
-    name: '별',
-    closed: true,
-    smooth: false,
-    path: Array.from({ length: 11 }, (_, i) => {
-      const a = -Math.PI / 2 + (i / 10) * T;
-      const r = i % 2 ? 19 : 50;
-      return [50 + Math.cos(a) * r, 52 + Math.sin(a) * r];
-    }),
-  },
-  {
     id: 'rabbit',
     name: '토끼',
     closed: true,
@@ -69,15 +61,14 @@ export const SHAPES = [
     },
   },
   {
-    id: 'fish',
-    name: '물고기',
+    id: 'cloud',
+    name: '구름',
     closed: true,
     smooth: true,
     path: [
-      [6, 50], [20, 31], [42, 24], [60, 31], [70, 46, 1], [98, 18, 1], [91, 50], [98, 82, 1], [70, 54, 1],
-      [60, 69], [42, 76], [20, 69],
+      [18, 72], [8, 62], [10, 50], [20, 45, 1], [22, 33], [34, 25], [46, 29, 1], [54, 18], [70, 16], [80, 26, 1],
+      [90, 32], [95, 46], [88, 60], [78, 72, 1], [48, 74],
     ],
-    deco: [circle(21, 45, 2.4, 10), [[33, 31], [37, 50], [33, 69]]],
   },
   {
     id: 'infinity',
@@ -102,23 +93,6 @@ export const SHAPES = [
     deco: [circle(37, 52, 2.4, 10), circle(63, 52, 2.4, 10), [[46, 62], [50, 65], [54, 62]], [[30, 64], [8, 61]], [[70, 64], [92, 61]]],
   },
   {
-    id: 'moon',
-    name: '초승달',
-    closed: true,
-    smooth: true,
-    path: (t) => {
-      // 바깥 큰 원(반지름 50)에서 오른쪽으로 비켜 선 작은 원(반지름 40)을 뺀 모양.
-      // 두 원이 만나는 각도: 바깥 ±0.891, 안쪽 ±1.332 (라디안)
-      const OUT = 0.61; // 바깥 호가 차지하는 길이 비율
-      if (t < OUT) {
-        const a = 0.891 + (t / OUT) * (2 * Math.PI - 1.782);
-        return [Math.cos(a) * 50, Math.sin(a) * 50];
-      }
-      const a = 2 * Math.PI - 1.332 - ((t - OUT) / (1 - OUT)) * (2 * Math.PI - 2.664);
-      return [22 + Math.cos(a) * 40, Math.sin(a) * 40];
-    },
-  },
-  {
     id: 'hexagon',
     name: '벌집',
     closed: true,
@@ -132,6 +106,17 @@ export const SHAPES = [
       const a = (i / 6) * T + Math.PI / 6;
       return [50 + Math.cos(a) * 20, 50 + Math.sin(a) * 20];
     })],
+  },
+  {
+    id: 'bear',
+    name: '곰',
+    closed: true,
+    smooth: true,
+    path: [
+      [50, 90], [28, 86], [14, 70], [12, 52], [18, 37, 1], [10, 26], [14, 14], [26, 12], [33, 22, 1], [50, 18],
+      [67, 22, 1], [74, 12], [86, 14], [90, 26], [82, 37, 1], [88, 52], [86, 70], [72, 86],
+    ],
+    deco: [circle(37, 50, 2.4, 10), circle(63, 50, 2.4, 10), circle(50, 66, 10, 16), circle(50, 61, 2, 8)],
   },
   {
     id: 'river',
