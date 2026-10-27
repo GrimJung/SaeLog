@@ -284,7 +284,8 @@ body[data-view='year'] .demo-banner { display: none; }
 .toast {
   position: fixed; left: 50%; bottom: calc(var(--tab) + 14px); z-index: 30; transform: translateX(-50%);
   display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px);
-  padding: 12px 12px 12px 18px; border-radius: 14px; background: rgba(30, 36, 74, 0.95);
+  padding: 12px 12px 12px 18px; border-radius: 14px; background: rgba(30, 36, 74, 0.72);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--line); font-size: 14px; white-space: nowrap; animation: fade 0.25s ease;
 }
 .toast button { border: 0; background: rgba(255, 217, 138, 0.14); color: var(--gold); padding: 8px 12px; border-radius: 10px; font-size: 13px; }
