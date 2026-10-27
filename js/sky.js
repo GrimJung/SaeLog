@@ -1,4 +1,4 @@
-// 밤하늘 그리기 도구 — 별은 전부 코드로 만든다 (원 + 글로우 + 빛줄기).
+// 밤하늘 그리기 도구 — 기록 별은 img/star-*.png, 배경 하늘은 코드로 그린다.
 
 export function rng(seed) {
   let a = seed >>> 0;
@@ -94,11 +94,23 @@ function sprite(level) {
 }
 
 // r = 화면에서 별 핵의 반지름(px). 호출하는 쪽에서 globalCompositeOperation='lighter' 권장.
+// 디자인한 별 그림 (진주빛 구슬, 평생기억은 여덟 갈래 빛). 불러오기 전에는 코드로 그린 별을 쓴다.
+// k = 그림 크기의 절반 / 별 핵 반경
+const IMG_K = { pisik: 4.5, mungkeul: 4, forever: 5.2 };
+const imgs = {};
+if (typeof Image !== 'undefined') {
+  for (const level of Object.keys(IMG_K)) {
+    const im = new Image();
+    im.onload = () => (imgs[level] = im);
+    im.src = new URL(`../img/star-${level}.png`, import.meta.url).href;
+  }
+}
+
 export function drawStar(ctx, x, y, level, r, alpha = 1) {
-  const st = STAR[level];
-  const d = r * st.k * 2;
+  const im = imgs[level];
+  const d = r * (im ? IMG_K[level] : STAR[level].k) * 2;
   ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-  ctx.drawImage(sprite(level), x - d / 2, y - d / 2, d, d);
+  ctx.drawImage(im || sprite(level), x - d / 2, y - d / 2, d, d);
   ctx.globalAlpha = 1;
 }
 
