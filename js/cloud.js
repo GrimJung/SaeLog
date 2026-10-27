@@ -56,10 +56,12 @@ export function parseCode(input = '') {
 }
 export const formatCode = (id) => id.match(/.{1,5}/g).join('-');
 
-export async function createChild(name) {
+export async function createChild(name, birth) {
   const { fs, db, user } = await init();
   const id = newChildId();
-  await fs.setDoc(fs.doc(db, 'children', id), { name, createdAt: Date.now(), createdBy: user.uid });
+  const data = { name, createdAt: Date.now(), createdBy: user.uid };
+  if (birth) data.birth = birth;
+  await fs.setDoc(fs.doc(db, 'children', id), data);
   return id;
 }
 
@@ -69,9 +71,18 @@ export async function getChild(id) {
   return s.exists() ? s.data() : null;
 }
 
-export async function renameChild(id, name) {
+// fields: { name?, birth? } — birth 가 '' 이면 지운다
+export async function updateChild(id, fields) {
   const { fs, db } = await init();
-  await fs.updateDoc(fs.doc(db, 'children', id), { name });
+  const data = { ...fields };
+  if ('birth' in data && !data.birth) data.birth = fs.deleteField();
+  await fs.updateDoc(fs.doc(db, 'children', id), data);
+}
+
+// 아이 정보(이름·출생 연월)가 바뀌면 함께 쓰는 가족 모두에게 반영
+export async function watchChild(id, onData) {
+  const { fs, db } = await init();
+  return fs.onSnapshot(fs.doc(db, 'children', id), (s) => s.exists() && onData(s.data()), (e) => console.warn(e));
 }
 
 export async function watchEntries(id, onData, onError) {

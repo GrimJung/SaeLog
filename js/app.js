@@ -87,7 +87,7 @@ today.innerHTML = `
     <div class="quote-wrap">
       <textarea id="t-text" rows="3" maxlength="300" placeholder="아이가 한 말을 그대로 적어주세요"></textarea>
     </div>
-    <p class="field-label">어떤 말이었나요?</p>
+    <p class="field-label">어떤 기분이었나요?</p>
     <div class="levels" role="radiogroup">
       ${LEVELS.map((l) => `
         <label class="level">
@@ -308,14 +308,15 @@ function renderFamilyBox() {
       <p class="menu-desc">아이 한 명의 하늘을 가족과 함께 채워요. 둘 다 쓰고, 둘 다 볼 수 있어요.</p>
       <button class="menu-item accent" data-fam="start">함께 쓰기 시작하기<small>새 하늘을 만들고 가족을 초대해요</small></button>
       <button class="menu-item" data-fam="join">초대 코드로 참여하기<small>가족에게 받은 링크나 코드가 있다면</small></button>
-      ${p.lastChildId ? `<button class="menu-item" data-fam="rejoin">${esc(p.lastChildName || '')}의 하늘에 다시 연결하기</button>` : ''}`;
+      ${p.lastChildId ? `<button class="menu-item" data-fam="rejoin">${esc(p.lastChildName || '')}의 하늘에 다시 연결하기</button>` : ''}
+      <button class="menu-item" data-fam="profile">아이 정보${p.childName || p.birth ? `<small>${esc([p.childName, D.fmtBirth(p.birth)].filter(Boolean).join(' · '))}</small>` : '<small>출생 연월을 넣으면 은하수에 개월 수가 보여요</small>'}</button>`;
     return;
   }
   const s = store.syncState();
   box.innerHTML = `<h3>${esc(p.childName)}의 하늘</h3>
     <p class="menu-desc"><span class="sync-dot ${s}"></span>${SYNC_LABEL[s] || ''} · 나는 ‘${esc(p.nickname)}’</p>
     <button class="menu-item accent" data-fam="invite">가족 초대하기<small>초대 링크를 보내면 같은 하늘을 함께 써요</small></button>
-    <button class="menu-item" data-fam="profile">이름·호칭 바꾸기</button>
+    <button class="menu-item" data-fam="profile">아이 정보·호칭 바꾸기${p.birth ? `<small>${D.fmtBirth(p.birth)}</small>` : ''}</button>
     <button class="ghost leave" data-fam="leave">이 기기에서 연결 끊기</button>`;
 }
 
@@ -347,6 +348,20 @@ function fam(html) {
 }
 
 const NICKS = ['엄마', '아빠', '할머니', '할아버지'];
+function birthField(value = '') {
+  const max = D.todayKey().slice(0, 7);
+  return `<label class="field"><span>출생 연월 <em>선택 · 은하수에 개월 수가 보여요</em></span>
+      <input name="birth" type="month" min="2000-01" max="${max}" placeholder="예: 2025-03" value="${esc(value || '')}"></label>`;
+}
+// type=month 를 지원하지 않는 브라우저에선 글자로 들어오므로 '2025.3', '2025-03' 등을 정리
+function readBirth(f) {
+  const raw = f.birth.value.trim();
+  if (!raw) return '';
+  const m = raw.match(/^(\d{4})\D+(\d{1,2})/);
+  const b = m ? `${m[1]}-${m[2].padStart(2, '0')}` : '';
+  if (!D.isBirth(b) || b > D.todayKey().slice(0, 7)) throw new Error('birth');
+  return b;
+}
 function nickField(value = '') {
   return `<label class="field"><span>내 호칭 <em>기록 옆에 표시돼요</em></span>
       <input name="nick" maxlength="10" required placeholder="예: 엄마" value="${esc(value)}"></label>
@@ -372,6 +387,7 @@ async function busy(btn, label, fn) {
       err.textContent =
         e.message === 'invalid' ? '코드 형식이 맞지 않아요. 받은 링크를 그대로 붙여넣어 보세요.'
         : e.message === 'notfound' ? '이 코드의 하늘을 찾지 못했어요. 다시 확인해 주세요.'
+        : e.message === 'birth' ? '출생 연월을 다시 확인해 주세요. 예: 2025-03'
         : '연결하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.';
     }
     btn.disabled = false;
@@ -384,7 +400,8 @@ function famStart() {
   fam(`<h3>함께 쓰기 시작하기</h3>
     <p class="menu-desc">우리 아이의 하늘을 하나 만들어요. 만든 뒤 초대 링크를 가족에게 보내면 돼요.</p>
     <form id="f-start">
-      <label class="field"><span>아이 이름</span><input name="child" maxlength="20" required placeholder="예: 새록이"></label>
+      <label class="field"><span>아이 이름</span><input name="child" maxlength="20" required placeholder="예: 새록이" value="${esc(store.profile().childName || '')}"></label>
+      ${birthField(store.profile().birth)}
       ${nickField(store.profile().nickname)}
       ${n ? `<p class="menu-desc small">이 기기에 있던 별 ${n}개도 함께 올라가요.</p>` : ''}
       <p class="form-err" hidden></p>
@@ -397,7 +414,7 @@ function famStart() {
     const nick = f.nick.value.trim();
     if (!child || !nick) return;
     busy(f.querySelector('.strong'), '만드는 중…', async () => {
-      await store.startFamily(child, nick);
+      await store.startFamily(child, nick, readBirth(f));
       renderChip();
       go();
       famInvite(true);
@@ -466,11 +483,12 @@ famSheet.addEventListener('click', async (ev) => {
 
 function famProfile() {
   const p = store.profile();
-  fam(`<h3>이름·호칭 바꾸기</h3>
+  const sh = store.isShared();
+  fam(`<h3>${sh ? '아이 정보·호칭 바꾸기' : '아이 정보'}</h3>
     <form id="f-prof">
-      <label class="field"><span>아이 이름 <em>가족 모두에게 바뀌어요</em></span><input name="child" maxlength="20" required value="${esc(p.childName)}"></label>
-      ${nickField(p.nickname)}
-      <p class="menu-desc small">이미 띄운 별의 이름표는 그대로 남아요.</p>
+      <label class="field"><span>아이 이름 ${sh ? '<em>가족 모두에게 바뀌어요</em>' : ''}</span><input name="child" maxlength="20" ${sh ? 'required' : ''} placeholder="예: 새록이" value="${esc(p.childName || '')}"></label>
+      ${birthField(p.birth)}
+      ${sh ? nickField(p.nickname) + '<p class="menu-desc small">이미 띄운 별의 이름표는 그대로 남아요.</p>' : ''}
       <p class="form-err" hidden></p>
       <div class="sheet-actions"><button type="button" class="ghost" data-act="close">취소</button><button class="secondary strong">저장</button></div>
     </form>`);
@@ -478,11 +496,11 @@ function famProfile() {
     ev.preventDefault();
     const f = ev.target;
     const child = f.child.value.trim();
-    const nick = f.nick.value.trim();
-    if (!child || !nick) return;
+    const nick = sh ? f.nick.value.trim() : '';
+    if (sh && (!child || !nick)) return;
     busy(f.querySelector('.strong'), '저장하는 중…', async () => {
-      if (child !== p.childName) await store.renameChild(child);
-      store.setNickname(nick);
+      await store.setChild({ name: child, birth: readBirth(f) });
+      if (sh) store.setNickname(nick);
       closeSheet(famSheet);
       renderChip();
       toast('저장했어요');

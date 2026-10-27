@@ -123,10 +123,25 @@ export function mountYear(el, { store, showEntry, state }) {
     const order = { pisik: 0, mungkeul: 1, forever: 2 };
     stars.sort((a, b) => order[a.e.level] - order[b.e.level]);
 
-    el.querySelector('h2').textContent = `${year}년 은하수`;
+    renderTitle();
     const nf = list.filter((e) => e.level === 'forever').length;
     el.querySelector('.title p').textContent = list.length ? `별 ${list.length}개 · 1등성 ${nf}개` : '아직 고요한 하늘';
     el.querySelector('[data-step="1"]').disabled = year >= new Date().getFullYear();
+  }
+
+  // 제목 옆 아이 나이: 올해는 오늘 기준, 지난 해는 그해 12월 기준
+  function renderTitle() {
+    const now = new Date();
+    const at = year >= now.getFullYear() ? now : new Date(year, 11, 31);
+    const age = D.ageLabel(store.profile().birth, at);
+    const h = el.querySelector('h2');
+    h.textContent = `${year}년 은하수`;
+    if (age) {
+      const s = document.createElement('span');
+      s.className = 'age';
+      s.textContent = age;
+      h.append(s);
+    }
   }
 
   // ── 카메라 ──
@@ -345,7 +360,7 @@ export function mountYear(el, { store, showEntry, state }) {
   }
 
   const stop = loop(draw);
-  const unsub = store.subscribe((type) => type === 'change' && placeStars());
+  const unsub = store.subscribe((type) => (type === 'change' ? placeStars() : type === 'child' && renderTitle()));
   return {
     unmount() {
       stop();

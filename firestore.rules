@@ -15,18 +15,18 @@ service cloud.firestore {
     }
 
     match /children/{childId} {
+      // 아이 이름(필수)과 출생 연월 'YYYY-MM'(선택)
+      function validChild() {
+        let d = request.resource.data;
+        return d.name is string && d.name.size() > 0 && d.name.size() <= 40
+          && (!('birth' in d) || (d.birth is string && d.birth.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')));
+      }
       allow get: if signedIn();
       allow list: if false;
-      allow create: if signedIn()
-        && childId.size() == 20
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 40;
+      allow create: if signedIn() && childId.size() == 20 && validChild();
       allow update: if signedIn()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 40;
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'birth'])
+        && validChild();
       allow delete: if false;
 
       match /entries/{date} {

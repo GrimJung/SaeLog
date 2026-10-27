@@ -18,7 +18,7 @@ export const LEVELS = [
 export const levelOf = (id) => LEVELS.find((l) => l.id === id) || LEVELS[0];
 
 const KEY = 'saerok:v1'; // 이 기기 전용 기록
-const PKEY = 'saerok:profile'; // { childId, childName, nickname, lastChildId, lastChildName }
+const PKEY = 'saerok:profile'; // { childId, childName, birth, nickname, lastChildId, lastChildName }
 const CKEY = (id) => `saerok:cache:${id}`; // 함께 쓰는 하늘의 사본 (빠른 첫 화면용)
 
 const ls = {
@@ -46,6 +46,7 @@ let profile = ls.get(PKEY) || {};
 let entries = {};
 let sync = 'local'; // local | demo | connecting | synced | pending | offline | error
 let unwatch = null;
+let unwatchChild = null;
 
 const shared = () => !isDemo && !!profile.childId;
 const localEntries = () => (ls.get(KEY) || {}).entries || {};
@@ -64,9 +65,17 @@ function boot() {
 
 async function watch() {
   const id = profile.childId;
-  unwatch?.();
-  unwatch = null;
+  stopWatch();
   setSync('connecting');
+  cloud
+    .watchChild(id, (c) => {
+      if (id !== profile.childId) return;
+      if (c.name === profile.childName && (c.birth || '') === (profile.birth || '')) return;
+      setProfile({ ...profile, childName: c.name, birth: c.birth || '', lastChildName: c.name });
+      emit('child');
+    })
+    .then((un) => (id === profile.childId ? (unwatchChild = un) : un()))
+    .catch((e) => console.warn(e));
   try {
     const un = await cloud.watchEntries(
       id,
@@ -90,6 +99,12 @@ async function watch() {
   }
 }
 
+function stopWatch() {
+  unwatch?.();
+  unwatchChild?.();
+  unwatch = unwatchChild = null;
+}
+
 function setSync(s) {
   sync = s;
   emit('sync');
@@ -111,8 +126,8 @@ function setProfile(p) {
   ls.set(PKEY, p);
 }
 
-function connect(childId, childName, nickname) {
-  setProfile({ ...profile, childId, childName, nickname, lastChildId: childId, lastChildName: childName });
+function connect(childId, childName, nickname, birth = '') {
+  setProfile({ ...profile, childId, childName, birth, nickname, lastChildId: childId, lastChildName: childName });
   entries = ls.get(CKEY(childId)) || {};
   emit('change');
   watch();
@@ -180,11 +195,11 @@ export const store = {
   // ── 가족과 함께 쓰기 ──
 
   // 새 하늘을 만들고, 이 기기에 있던 기록을 올린다.
-  async startFamily(childName, nickname) {
-    const id = await cloud.createChild(childName);
+  async startFamily(childName, nickname, birth = '') {
+    const id = await cloud.createChild(childName, birth);
     const list = Object.values(localEntries()).map((e) => ({ ...e, author: e.author || nickname }));
     await cloud.putMany(id, list);
-    connect(id, childName, nickname);
+    connect(id, childName, nickname, birth);
     return id;
   },
 
@@ -198,7 +213,7 @@ export const store = {
       const list = Object.values(localEntries()).map((e) => ({ ...e, author: e.author || nickname }));
       await cloud.putMany(id, list, { skipExisting: true });
     }
-    connect(id, child.name, nickname);
+    connect(id, child.name, nickname, child.birth || '');
     return child;
   },
 
@@ -207,17 +222,24 @@ export const store = {
     emit('sync');
   },
 
-  async renameChild(name) {
-    await cloud.renameChild(profile.childId, name);
-    setProfile({ ...profile, childName: name, lastChildName: name });
-    emit('sync');
+  // 아이 이름·출생 연월. 함께 쓰는 중이면 가족 모두에게 바뀐다.
+  async setChild({ name = profile.childName || '', birth = profile.birth || '' }) {
+    if (shared()) {
+      const fields = {};
+      if (name !== profile.childName) fields.name = name;
+      if (birth !== (profile.birth || '')) fields.birth = birth;
+      if (Object.keys(fields).length) await cloud.updateChild(profile.childId, fields);
+      setProfile({ ...profile, childName: name, birth, lastChildName: name });
+    } else {
+      setProfile({ ...profile, childName: name, birth });
+    }
+    emit('child');
   },
 
   // 이 기기만 연결을 끊는다. 서버의 기록은 그대로 남는다.
   disconnect() {
-    unwatch?.();
-    unwatch = null;
-    const { childId, childName, ...rest } = profile;
+    stopWatch();
+    const { childId, ...rest } = profile;
     setProfile(rest);
     entries = localEntries();
     sync = 'local';

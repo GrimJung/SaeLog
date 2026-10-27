@@ -42,3 +42,19 @@ export const weekLabel = (ws) => {
 };
 
 export const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+
+// 출생 연월 'YYYY-MM'
+export const isBirth = (s) => typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
+export const fmtBirth = (s) => (isBirth(s) ? `${+s.slice(0, 4)}년 ${+s.slice(5)}월생` : '');
+
+// 기준일의 나이. 36개월까지는 'N개월', 그 뒤는 연 나이(기준 연도 − 출생 연도) 'N살'.
+// 태어나기 전이면 빈 문자열.
+export const ageLabel = (birth, at = new Date()) => {
+  if (!isBirth(birth)) return '';
+  const by = +birth.slice(0, 4);
+  const bm = +birth.slice(5);
+  const months = (at.getFullYear() - by) * 12 + (at.getMonth() + 1 - bm);
+  if (months < 0) return '';
+  if (months <= 36) return `${months}개월`;
+  return `${at.getFullYear() - by}살`;
+};

@@ -176,6 +176,11 @@ button:disabled { cursor: default; opacity: 0.35; }
 .title { text-align: center; }
 .title h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 19px; }
 .title p { margin: 4px 0 0; font-size: 12px; color: var(--ink3); }
+.title h2 .age {
+  margin-left: 8px; padding: 2px 8px; border-radius: 999px; vertical-align: 3px;
+  font-family: var(--sans, inherit); font-size: 12px; color: var(--gold, #ffd98a);
+  background: rgba(255, 217, 138, 0.1); border: 1px solid rgba(255, 217, 138, 0.22);
+}
 .sky canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
 .sky-week {
