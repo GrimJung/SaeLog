@@ -14,6 +14,7 @@ const STEP = 340; // 윤곽선을 따라 성단 사이 간격
 const PAIR = 5.5; // 쌍성: 하루 자리에서 떨어진 거리(월드 단위)
 const MARGIN = 210;
 const GK = 0.1; // 우주에서 은하수 하나의 축척
+const GAP = 270; // 우주에서 은하수 사이 간격 (아래 이름표 자리 포함)
 const HEAD = 64; // 위쪽 제목
 const FOOT = 60; // 아래 줌 버튼
 const ORDER = { pisik: 0, mungkeul: 1, forever: 2 };
@@ -313,11 +314,11 @@ export function mountYear(el, { store, showEntry, state }) {
       if (vertical) {
         g.x0 = zig - w / 2;
         g.y0 = pos;
-        pos += h + 150;
+        pos += h + GAP;
       } else {
         g.x0 = pos;
         g.y0 = zig - h / 2;
-        pos += w + 150;
+        pos += w + GAP;
       }
       gal.push(g);
     }

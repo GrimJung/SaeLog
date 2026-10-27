@@ -18,6 +18,9 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* iOS 사파리: 버튼을 빠르게 연달아 누르면 '두 번 탭 확대'로 화면 전체가 커지는 것을 막는다
+   (두 손가락 확대·스크롤은 그대로) */
+html, button, a, label, input, select, textarea, .zoom-ctl, .tabbar { touch-action: manipulation; }
 html, body { margin: 0; min-height: 100%; }
 body {
   background: radial-gradient(130% 70% at 50% 0%, #1b2152 0%, #0b1026 55%, var(--bg0) 100%) fixed var(--bg0);
