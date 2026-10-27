@@ -154,6 +154,9 @@ button:disabled { cursor: default; opacity: 0.35; }
 .level small { font-size: 11px; color: var(--ink3); line-height: 1.35; word-break: keep-all; }
 .level:has(input:checked) { background: rgba(255, 233, 207, 0.08); border-color: rgba(255, 217, 138, 0.45); }
 .level:has(input:checked) .star-ico { transform: scale(1.35); }
+/* 평생기억은 빛줄기가 길어 칩 안에서는 조금 작게, 골라도 덜 커지게 (윗변에 닿지 않도록) */
+.level .star-ico.forever::before { width: 38px; height: 38px; }
+.level:has(input:checked) .star-ico.forever { transform: scale(1.15); }
 .level:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
 
 .note-input {
