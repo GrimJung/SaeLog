@@ -11,6 +11,7 @@ const MINR = { pisik: 0.55, mungkeul: 1.15, forever: 3.2 }; // 화면 최소 px
 const MAXR = { pisik: 4, mungkeul: 6.5, forever: 10 };
 const CLUSTER_R = 125;
 const STEP = 340; // 윤곽선을 따라 성단 사이 간격
+const PAIR = 5.5; // 쌍성: 하루 자리에서 떨어진 거리(월드 단위)
 const MARGIN = 210;
 const GK = 0.1; // 우주에서 은하수 하나의 축척
 const HEAD = 64; // 위쪽 제목
@@ -209,18 +210,32 @@ export function mountYear(el, { store, showEntry, state }) {
   function starsOf(y) {
     if (starCache.has(y)) return starCache.get(y);
     const wd = getWorld(y);
-    const list = store.inYear(y).map((e) => {
-      const d = D.fromKey(e.date);
+    // 같은 날 별끼리 묶어서, 여럿이면 하루 자리를 두고 마주 보는 쌍성으로
+    const days = new Map();
+    for (const e of store.inYear(y)) {
+      if (!days.has(e.date)) days.set(e.date, []);
+      days.get(e.date).push(e);
+    }
+    const list = [];
+    for (const [date, es] of days) {
+      const d = D.fromKey(date);
       const m = d.getMonth();
       const i = d.getDate() - 1;
       const R = rng(hash(`${y}-${m}`));
       const rot = R() * 6.283;
-      const Rd = rng(hash(e.date));
+      const Rd = rng(hash(date));
       const ang = i * 2.39996 + rot + (Rd() - 0.5) * 0.3;
       const rad = 20 * Math.sqrt(i + 0.6) + (Rd() - 0.5) * 6;
       const c = wd.centers[m];
-      return { x: c.x + Math.cos(ang) * rad, y: c.y + Math.sin(ang) * rad, e, ph: Rd() * 6.28, day: i + 1 };
-    });
+      const cx = c.x + Math.cos(ang) * rad;
+      const cy = c.y + Math.sin(ang) * rad;
+      const ph = Rd() * 6.28;
+      es.forEach((e, k) => {
+        const a = ph + (k / es.length) * Math.PI * 2;
+        const off = es.length > 1 ? PAIR : 0;
+        list.push({ x: cx + Math.cos(a) * off, y: cy + Math.sin(a) * off, e, ph: ph + k * 2.1, day: i + 1, first: k === 0 });
+      });
+    }
     // 평생기억이 위에 그려지도록
     list.sort((a, b) => ORDER[a.e.level] - ORDER[b.e.level]);
     starCache.set(y, list);
@@ -688,6 +703,7 @@ export function mountYear(el, { store, showEntry, state }) {
       ctx.font = '10px "Gowun Dodum", sans-serif';
       ctx.fillStyle = `rgba(200,200,232,${clamp((zoomed - 4.5) / 2, 0, 0.5)})`;
       for (const st of stars) {
+        if (!st.first) continue; // 쌍성은 날짜를 한 번만
         const p = toScreen(c, st.x, st.y);
         if (p.x < 0 || p.y < 0 || p.x > w || p.y > h) continue;
         ctx.fillText(st.day, p.x, p.y + starR(st.e.level, c.s) + 13);

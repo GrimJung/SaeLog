@@ -1,9 +1,10 @@
-// 일주일 = 별을 선으로 이은 별자리
+// 일주일 = 별을 선으로 이은 별자리. 같은 날 가족이 함께 띄운 별은 쌍성으로.
 import { setupCanvas, makeBackdrop, drawStar, rng, hash, loop, clamp } from '../../sky.js';
 import * as D from '../../date.js';
 import { levelOf } from '../../store.js';
 
 const R_STAR = { pisik: 2.4, mungkeul: 3.6, forever: 5.4 };
+const PAIR = 9; // 쌍성: 하루 자리에서 떨어진 거리(px)
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 export function mountWeek(el, { store, showEntry, state }) {
@@ -20,13 +21,13 @@ export function mountWeek(el, { store, showEntry, state }) {
   const canvas = el.querySelector('canvas');
   let backdrop = null;
   const cv = setupCanvas(canvas, () => (backdrop = null));
-  let days, entries, pts, rec, t0;
+  let days, byDay, pts, rec, t0;
 
   function load(animate = true) {
     state.week = ws;
     days = Array.from({ length: 7 }, (_, i) => D.addDays(ws, i));
-    entries = days.map((d) => store.get(d));
-    rec = entries.map((e, i) => (e ? i : -1)).filter((i) => i >= 0);
+    byDay = days.map((d) => store.onDate(d));
+    rec = byDay.map((l, i) => (l.length ? i : -1)).filter((i) => i >= 0);
     const R = rng(hash('week' + ws));
     let y = 0.3 + R() * 0.4;
     pts = days.map((_, i) => {
@@ -44,14 +45,11 @@ export function mountWeek(el, { store, showEntry, state }) {
 
     const list = el.querySelector('.entry-list');
     list.innerHTML = rec.length
-      ? rec.map((i) => {
-          const e = entries[i];
-          return `<li><button data-date="${e.date}">
+      ? rec.flatMap((i) => byDay[i]).map((e) => `<li><button data-id="${esc(e.id)}">
             <span class="dot ${e.level}"></span>
             <span class="when">${D.WD[D.fromKey(e.date).getDay()]}</span>
             <span class="txt">${esc(e.text)}</span>
-            <span class="lv">${levelOf(e.level).label}${store.isShared() && e.author ? ` · ${esc(e.author)}` : ''}</span></button></li>`;
-        }).join('')
+            <span class="lv">${levelOf(e.level).label}${store.isFamily() && e.author ? ` · ${esc(e.author)}` : ''}</span></button></li>`).join('')
       : `<li class="quiet">고요한 하늘이에요</li>`;
   }
 
@@ -62,24 +60,34 @@ export function mountWeek(el, { store, showEntry, state }) {
     })
   );
   el.querySelector('.entry-list').addEventListener('click', (ev) => {
-    const b = ev.target.closest('button[data-date]');
-    if (b) showEntry(store.get(b.dataset.date));
+    const b = ev.target.closest('button[data-id]');
+    if (b) showEntry(store.byId(b.dataset.id));
   });
 
   const P = (i) => ({ x: pts[i].x * cv.w, y: pts[i].y * cv.h });
+  // 그날 k번째 별의 자리 — 하나면 가운데, 여럿이면 가운데를 두고 서로 마주 보게(쌍성)
+  const SP = (i, k) => {
+    const c = P(i);
+    const n = byDay[i].length;
+    if (n < 2) return c;
+    const a = pts[i].ph + (k / n) * Math.PI * 2;
+    return { x: c.x + Math.cos(a) * PAIR, y: c.y + Math.sin(a) * PAIR * 0.8 };
+  };
 
   canvas.addEventListener('click', (ev) => {
     const r = canvas.getBoundingClientRect();
     const mx = ev.clientX - r.left;
     const my = ev.clientY - r.top;
-    let best = -1;
+    let best = null;
     let bd = 32;
     for (const i of rec) {
-      const p = P(i);
-      const d = Math.hypot(p.x - mx, p.y - my);
-      if (d < bd) (bd = d), (best = i);
+      byDay[i].forEach((e, k) => {
+        const p = SP(i, k);
+        const d = Math.hypot(p.x - mx, p.y - my);
+        if (d < bd) (bd = d), (best = e);
+      });
     }
-    if (best >= 0) showEntry(entries[best]);
+    if (best) showEntry(best);
   });
 
   function draw(t) {
@@ -107,12 +115,13 @@ export function mountWeek(el, { store, showEntry, state }) {
 
     ctx.globalCompositeOperation = 'lighter';
     rec.forEach((i, k) => {
-      const e = entries[i];
-      const p = P(i);
       const ap = clamp((age - k * 140) / 600, 0, 1);
-      const tw = 0.82 + 0.18 * Math.sin(t * 0.0016 + pts[i].ph);
-      const base = e.level === 'pisik' ? 0.72 : 1;
-      drawStar(ctx, p.x, p.y, e.level, R_STAR[e.level], ap * tw * base);
+      byDay[i].forEach((e, j) => {
+        const p = SP(i, j);
+        const tw = 0.82 + 0.18 * Math.sin(t * 0.0016 + pts[i].ph + j * 2.1);
+        const base = e.level === 'pisik' ? 0.72 : 1;
+        drawStar(ctx, p.x, p.y, e.level, R_STAR[e.level], ap * tw * base);
+      });
     });
     ctx.globalCompositeOperation = 'source-over';
 

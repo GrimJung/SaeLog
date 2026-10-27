@@ -31,10 +31,10 @@ const ga = (w = '') => {
   return w + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? '이' : '가');
 };
 
-// 누가 띄운 별인지 (함께 쓸 때만)
+// 누가 띄운 별인지 (함께 쓰거나 예시 하늘일 때)
 function whoLine(e) {
-  if (!store.isShared() || !e?.author) return '';
-  return e.editedBy && e.editedBy !== e.author ? `${ga(e.author)} 띄우고 ${ga(e.editedBy)} 고침` : `${ga(e.author)} 띄운 별`;
+  if (!store.isFamily() || !e?.author) return '';
+  return `${ga(e.author)} 띄운 별`;
 }
 
 // ── 탭 / 라우팅 ──
@@ -98,8 +98,9 @@ today.innerHTML = `
     </div>
     <input id="t-note" class="note-input" maxlength="120" placeholder="상황 메모 (선택) · 예: 목욕하다가">
     <button class="primary" id="t-save" type="submit" disabled>하늘에 띄우기</button>
-    <button class="ghost" id="t-del" type="button" hidden>이 날의 기록 지우기</button>
-  </form>`;
+    <button class="ghost" id="t-del" type="button" hidden>내 기록 지우기</button>
+  </form>
+  <section class="family-day" id="t-family" hidden></section>`;
 
 const form = $('#t-form');
 const tText = $('#t-text');
@@ -108,14 +109,11 @@ const tSave = $('#t-save');
 
 function fillToday() {
   const isToday = editDate === D.todayKey();
-  const e = store.get(editDate);
-  const me = store.profile().nickname;
+  const e = store.mine(editDate);
   $('#t-eyebrow').textContent = isToday ? '오늘의 새록' : '지난 날의 새록';
   $('#t-date').textContent = isToday ? `오늘 · ${D.fmtShort(editDate)}` : D.fmtShort(editDate);
   $('#t-sub').textContent = e
-    ? store.isShared() && e.author && e.author !== me
-      ? `${ga(e.author)} 띄운 별이에요. 함께 고쳐 쓸 수 있어요.`
-      : '이미 떠 있는 별이에요. 고쳐 쓸 수 있어요.'
+    ? '이미 띄운 내 별이에요. 고쳐 쓸 수 있어요.'
     : isToday ? '아이 재우고, 오늘 하루를 한마디로.' : '그날 아이가 했던 말을 떠올려 보세요.';
   const inp = $('#t-input');
   inp.value = editDate;
@@ -126,10 +124,30 @@ function fillToday() {
   form.querySelectorAll('input[name=level]').forEach((r) => (r.checked = r.value === e?.level));
   tSave.textContent = e ? '고쳐서 띄우기' : '하늘에 띄우기';
   $('#t-del').hidden = !e;
+  renderFamilyDay();
   dirty = false;
   autoGrow();
   validate();
 }
+
+// 같은 날 가족이 띄운 별 (읽기만)
+function renderFamilyDay() {
+  const box = $('#t-family');
+  const others = store.onDate(editDate).filter((x) => !store.isMine(x));
+  box.hidden = !others.length;
+  if (!others.length) return (box.innerHTML = '');
+  box.innerHTML = `<p class="field-label">같은 날 가족이 띄운 별</p>
+    ${others.map((x) => `
+      <button type="button" class="fam-entry lv-${x.level}" data-id="${esc(x.id)}">
+        <span class="star-ico ${x.level}"></span>
+        <span class="fam-text">${esc(x.text)}</span>
+        <span class="fam-who">${esc(x.author || '가족')} · ${levelOf(x.level).label}</span>
+      </button>`).join('')}`;
+}
+$('#t-family').addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-id]');
+  if (b) showEntry(store.byId(b.dataset.id));
+});
 function validate() {
   tSave.disabled = !(tText.value.trim() && form.level.value);
 }
@@ -170,8 +188,8 @@ form.addEventListener('submit', (ev) => {
   });
 });
 $('#t-del').addEventListener('click', () => {
-  const msg = store.isShared() ? '가족 모두의 하늘에서 사라져요.' : '';
-  if (!confirm(`${D.fmtShort(editDate)}의 기록을 지울까요? ${msg}`)) return;
+  const msg = store.isShared() ? '가족의 별은 그대로 남아요.' : '';
+  if (!confirm(`${D.fmtShort(editDate)}의 내 기록을 지울까요? ${msg}`)) return;
   store.remove(editDate);
   fillToday();
   toast('기록을 지웠어요');
@@ -198,7 +216,7 @@ function renderForever() {
     </header>
     ${list.length
       ? `<div class="fcards">${list.map((e) => `
-          <article class="fcard" data-date="${e.date}" tabindex="0">
+          <article class="fcard" data-id="${esc(e.id)}" tabindex="0">
             <span class="star-ico forever"></span>
             <blockquote>${esc(e.text)}</blockquote>
             <footer><time>${D.fmtLong(e.date)}</time>${e.note ? `<span>${esc(e.note)}</span>` : ''}${whoLine(e) ? `<span>${esc(whoLine(e))}</span>` : ''}</footer>
@@ -207,11 +225,11 @@ function renderForever() {
 }
 $('#view-forever').addEventListener('click', (ev) => {
   const c = ev.target.closest('.fcard');
-  if (c) showEntry(store.get(c.dataset.date));
+  if (c) showEntry(store.byId(c.dataset.id));
 });
 $('#view-forever').addEventListener('keydown', (ev) => {
   const c = ev.target.closest('.fcard');
-  if (c && ev.key === 'Enter') showEntry(store.get(c.dataset.date));
+  if (c && ev.key === 'Enter') showEntry(store.byId(c.dataset.id));
 });
 
 // ── 별 카드 시트 ──
@@ -229,9 +247,23 @@ function showEntry(e) {
   const who = sheet.querySelector('.who');
   who.textContent = whoLine(e);
   who.hidden = !who.textContent;
+  // 내 별만 고칠 수 있다
+  sheet.querySelector('[data-act=edit]').hidden = !store.isMine(e);
+  // 같은 날 함께 뜬 별
+  const also = store.onDate(e.date).filter((x) => x.id !== e.id);
+  const box = sheet.querySelector('.also');
+  box.hidden = !also.length;
+  box.innerHTML = also.length
+    ? `<p>같은 날 함께 뜬 별</p>${also.map((x) => `
+        <button type="button" data-id="${esc(x.id)}"><span class="dot ${x.level}"></span><span class="txt">${esc(x.text)}</span><span class="by">${esc(x.author || '가족')}</span></button>`).join('')}`
+    : '';
   sheet.dataset.date = e.date;
-  openSheet(sheet);
+  if (sheet.hidden) openSheet(sheet);
 }
+sheet.querySelector('.also').addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-id]');
+  if (b) showEntry(store.byId(b.dataset.id));
+});
 sheet.querySelector('[data-act=edit]').addEventListener('click', () => {
   editDate = sheet.dataset.date;
   closeSheet(sheet);
@@ -462,11 +494,26 @@ function famJoin(code = '') {
       <label class="field"><span>초대 코드</span>
         <input name="code" required autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="xxxxx-xxxxx-xxxxx-xxxxx" value="${esc(code)}"></label>
       ${nickField(p.nickname)}
-      ${n && !p.childId ? `<label class="check"><input type="checkbox" name="merge" checked> 이 기기에 있던 별 ${n}개도 함께 옮기기<small>같은 날짜에 이미 별이 있으면 그쪽을 남겨요</small></label>` : ''}
+      <p class="menu-desc small member-hint" hidden>이미 이 하늘에 있는 가족이면 내 호칭을 골라 주세요. 쓰던 별을 이어서 써요.</p>
+      ${n && !p.childId ? `<label class="check"><input type="checkbox" name="merge" checked> 이 기기에 있던 별 ${n}개도 함께 옮기기<small>그 하늘에 내 별이 이미 있는 날은 그쪽을 남겨요</small></label>` : ''}
       ${p.childId ? `<p class="menu-desc small">지금 연결된 ${esc(p.childName)}의 하늘에서 바뀌어요.</p>` : ''}
       <p class="form-err" hidden></p>
       <div class="sheet-actions"><button type="button" class="ghost" data-act="close">취소</button><button class="secondary strong">함께 쓰기</button></div>
     </form>`);
+  // 이 하늘에 이미 있는 가족을 맨 앞에 — 새 휴대폰이면 내 호칭을 골라 이어서 쓰면 된다
+  const showMembers = (c) =>
+    store.members(c).then((list) => {
+      const chips = $('#f-join .chips');
+      if (!chips || !list.length) return;
+      chips.querySelectorAll('.chip.member').forEach((x) => x.remove());
+      const names = list.map((m) => m.nickname);
+      chips.querySelectorAll('.chip').forEach((x) => names.includes(x.dataset.nick) && x.remove());
+      chips.insertAdjacentHTML('afterbegin', names.map((n) => `<button type="button" class="chip member" data-nick="${esc(n)}">${esc(n)}</button>`).join(''));
+      $('#f-join .member-hint').hidden = false;
+    }).catch(() => {});
+  if (code) showMembers(code);
+  $('#f-join').code.addEventListener('change', (ev) => showMembers(ev.target.value));
+
   $('#f-join').addEventListener('submit', (ev) => {
     ev.preventDefault();
     const f = ev.target;
@@ -579,7 +626,10 @@ store.subscribe((type, info) => {
   if (!menu.hidden) renderFamilyBox();
   if (type !== 'change') return;
   if (active === 'forever') renderForever();
-  if (active === 'today' && !dirty && document.activeElement?.closest('#t-form') == null) fillToday();
+  if (active === 'today') {
+    if (!dirty && document.activeElement?.closest('#t-form') == null) fillToday();
+    else renderFamilyDay(); // 쓰는 중이어도 가족의 별은 바로 보이게
+  }
 });
 
 renderChip();

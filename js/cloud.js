@@ -1,6 +1,7 @@
 // 함께 쓰기용 서버 연결 (Firebase Firestore).
-// 구조: children/{childId}            { name, createdAt, createdBy }
-//       children/{childId}/entries/{date}  기록 하나 (store.js 의 Entry)
+// 구조: children/{childId}                         { name, birth?, createdAt, createdBy }
+//       children/{childId}/members/{memberId}      가족 한 사람 { nickname, joinedAt }
+//       children/{childId}/entries/{date_memberId} 기록 하나 — 한 사람당 하루 하나 (store.js 의 Entry)
 // childId(20자, 약 100비트 무작위)가 곧 초대 코드다. 아는 사람만 그 아이의 하늘에 들어올 수 있다.
 import { FIREBASE_CONFIG } from './firebase-config.js';
 
@@ -99,17 +100,20 @@ export async function watchEntries(id, onData, onError) {
   );
 }
 
+const keyOf = (e) => `${e.date}_${e.memberId}`;
+const dataOf = ({ id, ...rest }) => rest; // id 는 문서 이름이라 내용에는 넣지 않는다
+
 export async function putEntry(id, e) {
   const { fs, db } = await init();
-  return fs.setDoc(fs.doc(db, 'children', id, 'entries', e.date), e);
+  return fs.setDoc(fs.doc(db, 'children', id, 'entries', keyOf(e)), dataOf(e));
 }
 
-export async function deleteEntry(id, date) {
+export async function deleteEntry(id, entryId) {
   const { fs, db } = await init();
-  return fs.deleteDoc(fs.doc(db, 'children', id, 'entries', date));
+  return fs.deleteDoc(fs.doc(db, 'children', id, 'entries', entryId));
 }
 
-// 여러 개 한 번에. skipExisting 이면 서버에 이미 있는 날짜는 건드리지 않는다.
+// 여러 개 한 번에. skipExisting 이면 서버에 이미 있는 기록(같은 날 같은 사람)은 건드리지 않는다.
 export async function putMany(id, list, { skipExisting = false } = {}) {
   if (!list.length) return 0;
   const { fs, db } = await init();
@@ -117,12 +121,47 @@ export async function putMany(id, list, { skipExisting = false } = {}) {
   if (skipExisting) {
     const have = new Set();
     (await fs.getDocs(fs.collection(db, 'children', id, 'entries'))).forEach((d) => have.add(d.id));
-    todo = list.filter((e) => !have.has(e.date));
+    todo = list.filter((e) => !have.has(keyOf(e)));
   }
   for (let i = 0; i < todo.length; i += 400) {
     const batch = fs.writeBatch(db);
-    for (const e of todo.slice(i, i + 400)) batch.set(fs.doc(db, 'children', id, 'entries', e.date), e);
+    for (const e of todo.slice(i, i + 400)) batch.set(fs.doc(db, 'children', id, 'entries', keyOf(e)), dataOf(e));
     await batch.commit();
   }
   return todo.length;
+}
+
+// ── 가족 구성원 ──
+export async function getMembers(id) {
+  const { fs, db } = await init();
+  const out = [];
+  (await fs.getDocs(fs.collection(db, 'children', id, 'members'))).forEach((d) => out.push({ id: d.id, ...d.data() }));
+  return out.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+}
+
+// 없을 때만 만든다
+export async function ensureMember(id, memberId, nickname) {
+  const { fs, db } = await init();
+  const ref = fs.doc(db, 'children', id, 'members', memberId);
+  if (!(await fs.getDoc(ref)).exists()) await fs.setDoc(ref, { nickname, joinedAt: Date.now() });
+}
+
+export async function renameMember(id, memberId, nickname) {
+  const { fs, db } = await init();
+  await fs.setDoc(fs.doc(db, 'children', id, 'members', memberId), { nickname }, { merge: true });
+}
+
+// 예전 구조(날짜당 기록 하나) → 새 구조로 옮긴다.
+// newMembers: { memberId: nickname }, moves: [{ from: 옛 문서 이름, to: 새 문서 이름 | null, data }]
+export async function migrate(id, newMembers, moves) {
+  const { fs, db } = await init();
+  const batch = fs.writeBatch(db);
+  for (const [mid, nickname] of Object.entries(newMembers)) {
+    batch.set(fs.doc(db, 'children', id, 'members', mid), { nickname, joinedAt: Date.now() });
+  }
+  for (const m of moves) {
+    if (m.to) batch.set(fs.doc(db, 'children', id, 'entries', m.to), m.data);
+    batch.delete(fs.doc(db, 'children', id, 'entries', m.from));
+  }
+  await batch.commit();
 }
