@@ -30,8 +30,8 @@ const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<'
 const mode = currentMode();
 const viewState = {}; // 모드 뷰가 탭을 오가도 위치(주/연도)를 기억
 const ICONS = {
-  today: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M19 14.5A7.5 7.5 0 1 1 9.5 5a6 6 0 0 0 9.5 9.5Z"/><path d="M15 4.5v3M13.5 6h3" opacity=".7"/></svg>`,
-  forever: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 3c.6 4.6 3.4 7.4 8 8-4.6.6-7.4 3.4-8 8-.6-4.6-3.4-7.4-8-8 4.6-.6 7.4-3.4 8-8Z"/></svg>`,
+  today: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.98 15.63A7.2 7.2 0 1 1 9.8 17.68L5.27 19.03Z"/><path d="M12.5 7.8v6.4M9.3 11h6.4"/></svg>`,
+  forever: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.8Q12.2 11.8 19.2 12Q12.2 12.2 12 19.2Q11.8 12.2 4.8 12Q11.8 11.8 12 4.8Z" transform="rotate(45 12 12)" fill="currentColor" stroke="none" opacity=".65"/><path d="M12 2.6Q12.2 11.8 21.4 12Q12.2 12.2 12 21.4Q11.8 12.2 2.6 12Q11.8 11.8 12 2.6Z" fill="currentColor" stroke="none"/></svg>`,
 };
 const TABS = [
   { id: 'today', label: '오늘', icon: ICONS.today },
