@@ -326,11 +326,25 @@ if (window.visualViewport) {
     const root = document.documentElement.style;
     root.setProperty('--vvt', `${vv.offsetTop}px`);
     root.setProperty('--vvh', `${vv.height}px`);
+    // 하단 탭은 실제로 보이는 화면의 바닥에 붙인다.
+    // (아이폰 홈 화면 앱은 키보드를 내린 뒤에도 화면 높이를 예전대로 되돌리지 않아 탭이 떠 있곤 한다)
+    const gap = window.innerHeight - (vv.offsetTop + vv.height);
+    const keyboard = gap > 120;
+    document.body.classList.toggle('kb-open', keyboard);
+    root.setProperty('--tab-shift', `${keyboard ? 0 : Math.round(gap)}px`);
   };
   vv.addEventListener('resize', fitSheets);
   vv.addEventListener('scroll', fitSheets);
   fitSheets();
 }
+// 키보드가 내려가면 아이폰이 화면 높이를 다시 계산하도록 살짝 스크롤을 건드린다
+document.addEventListener('focusout', (ev) => {
+  if (!ev.target.matches?.('input, textarea')) return;
+  setTimeout(() => {
+    if (document.activeElement?.matches?.('input, textarea')) return;
+    window.scrollTo(window.scrollX, window.scrollY);
+  }, 120);
+});
 // 창 안의 칸을 누르면, 그 칸이 보이도록 창 안에서 스크롤
 document.addEventListener('focusin', (ev) => {
   if (!ev.target.matches?.('.sheet input, .sheet textarea')) return;
